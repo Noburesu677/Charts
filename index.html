@@ -6,6 +6,7 @@
   <style>
     * { box-sizing: border-box; margin:0; padding:0; }
     html, body { height:100%; background:#141517; color:#DDD; font-family:sans-serif; }
+    #container { display:flex; flex-direction:column; height:100%; }
     #controls {
       display:flex; justify-content:center; gap:8px;
       background:#1E1F22; padding:10px; border-bottom:1px solid #333;
@@ -16,7 +17,13 @@
     }
     #controls button.active { background:#5865F2; color:#fff; }
     #controls button:hover { background:#3A3D44; color:#fff; }
-    #chart { flex:1; display:flex; justify-content:center; align-items:center; background:#1E1F22; }
+    #current-price {
+      text-align:center; padding:8px 0; font-size:1.1em; color:#1FB6FF;
+    }
+    #chart {
+      flex:1; display:flex; justify-content:center; align-items:center;
+      background:#1E1F22;
+    }
     #chart img { max-width:100%; max-height:100%; }
     footer {
       text-align:right; font-size:0.75em;
@@ -24,7 +31,6 @@
     }
     footer a { color:#555; text-decoration:none; }
     footer a:hover { color:#AAA; }
-    #container { display:flex; flex-direction:column; height:100%; }
   </style>
 </head>
 <body>
@@ -37,71 +43,112 @@
       <button data-range="90">3m</button>
       <button data-range="365">1y</button>
     </div>
+
+    <div id="current-price">Valeur actuelle : –</div>
+
     <div id="chart">
       <p style="color:#888;">Chargement…</p>
     </div>
+
     <footer>
       <a href="https://discord.gg/jM2AQXtZ" target="_blank">Join AnomicValue Discord</a>
     </footer>
   </div>
 
   <script>
-    const APP_URL = "https://script.google.com/macros/s/AKfycbzyaaDiRnXsKyx5-CwD_XFzPoCswdJoU_yfNLdmvanYPrgrUg_CjLDs8KlIHOLevsiSTg";
+    // URL de ton Apps Script déployé (remplace par la tienne)
+    const APP_URL = "https://script.google.com/macros/s/AKfycbyX-_XhaZi2M05lP3B67oIxsg9j8oTC0t7VvYHwALlKYCe96ceowiUiwiX6chRwzEwY0Q/exec";
     const params  = new URLSearchParams(location.search);
     const item    = params.get('item') || params.get('name');
-    const chartEl = document.getElementById('chart');
     if (!item) {
-      chartEl.innerHTML = '<p style="padding:20px;color:#EEE;">⚠️ Passe <code>?item=NomDeTonItem</code></p>';
+      document.getElementById('chart').innerHTML =
+        '<p style="padding:20px;color:#EEE;text-align:center;">⚠️ Passe <code>?item=NomDeTonItem</code></p>';
       throw '';
     }
 
-    // Génère l'URL QuickChart avec data-url pointant vers ton Apps Script
-    function makeQC(rangeDays) {
-      // Config JSON de QuickChart
+    let HIST = [];
+
+    // Charge les données JSON de PriceHistory
+    async function loadData() {
+      try {
+        const res = await fetch(`${APP_URL}?name=${encodeURIComponent(item)}`);
+        const d   = await res.json();
+        if (d.error) {
+          document.getElementById('chart').innerHTML =
+            `<p style="padding:20px;color:#E66;text-align:center;">❌ ${d.error}</p>`;
+          return;
+        }
+        HIST = d;
+        // Affiche la valeur actuelle
+        const last = HIST[HIST.length - 1];
+        const cp = last ? last.v.toLocaleString() : "N/A";
+        document.getElementById('current-price').textContent = `Valeur actuelle : ${cp}`;
+        render(currentRange);
+      } catch (e) {
+        document.getElementById('chart').innerHTML =
+          '<p style="padding:20px;color:#E66;text-align:center;">Erreur réseau</p>';
+      }
+    }
+
+    // Génère l'URL QuickChart selon la plage
+    function makeQC(days) {
+      // Filtre HIST selon days
+      const pts = days === 0
+        ? HIST
+        : HIST.filter(pt => pt.t * 1000 >= Date.now() - days * 24 * 3600 * 1000);
+
+      // Construis la config JSON inline
       const cfg = {
         type: 'line',
-        data: { datasets: [{
-          label: item,
-          // QuickChart va charger data via data-url
-          data: { /* vide */ }
-        }]},
+        data: {
+          labels: pts.map(pt => new Date(pt.t * 1000).toLocaleDateString()),
+          datasets: [{
+            label: item,
+            data: pts.map(pt => pt.v),
+            borderColor: '#1FB6FF',
+            backgroundColor: 'rgba(31,182,255,0.2)',
+            pointRadius: 0,
+            tension: 0.2
+          }]
+        },
         options: {
-          plugins:{ legend:{ labels:{ color:'#EEE' }}},
-          scales:{
-            x:{ type:'time', time:{ unit:'day' }, grid:{color:'#333'}, ticks:{color:'#CCC'} },
-            y:{ grid:{color:'#333'}, ticks:{color:'#CCC'} }
+          plugins: { legend: { labels: { color: '#EEE' } } },
+          scales: {
+            x: { ticks: { color: '#CCC' }, grid: { color: '#333' } },
+            y: { ticks: { color: '#CCC' }, grid: { color: '#333' } }
           },
-          layout:{ padding:20 },
-          backgroundColor:'#141517'
+          layout: { padding: 20 },
+          backgroundColor: '#141517'
         }
       };
 
-      // Data-url param : on ajoute &rangeDays pour filtrage côté QuickChart? non, on filtre avant
-      const dataUrl = APP_URL + "?name=" + encodeURIComponent(item);
-
-      // On encode :
-      return "https://quickchart.io/chart?c=" + encodeURIComponent(JSON.stringify(cfg))
-           + "&data-url=" + encodeURIComponent(dataUrl)
-           + "&fetch-datasource=true"
-           + "&width=800&height=400&devicePixelRatio=2"
-           + (rangeDays>0 ? "&cacheSeconds=0&format=png&backgroundColor=%23141A1D&range=" + rangeDays : "");
+      // Encode et renvoie l'URL
+      return 'https://quickchart.io/chart?c='
+        + encodeURIComponent(JSON.stringify(cfg))
+        + '&width=800&height=400';
     }
 
-    // Affiche l'image
-    function render(range) {
-      document.querySelectorAll('#controls button').forEach(b=>b.classList.toggle('active', Number(b.dataset.range)===range));
-      const url = makeQC(range);
-      chartEl.innerHTML = `<img src="${url}" alt="Historique ${item}" />`;
+    // Affiche l’image et log l’URL pour debug
+    let currentRange = 0;
+    function render(days) {
+      currentRange = days;
+      document.querySelectorAll('#controls button')
+        .forEach(b => b.classList.toggle('active', Number(b.dataset.range) === days));
+
+      const url = makeQC(days);
+      console.log("QuickChart URL:", url);  // ← DEBUG : copie cette URL
+      document.getElementById('chart').innerHTML =
+        `<img src="${url}" alt="Historique ${item}" />`;
     }
 
-    // Boutons
-    document.getElementById('controls').addEventListener('click', e=>{
-      if (e.target.tagName!=='BUTTON') return;
+    // Gestion des boutons
+    document.getElementById('controls').addEventListener('click', e => {
+      if (e.target.tagName !== 'BUTTON') return;
       render(Number(e.target.dataset.range));
     });
 
-    // Lancement initial
-    render(0);
+    // Initialisation
+    loadData();
   </script>
 </body>
 </html>
