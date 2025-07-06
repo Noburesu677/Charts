@@ -67,6 +67,7 @@
     }
 
     let HIST = [];
+    let currentRange = 0;
 
     // Charge les données JSON de PriceHistory
     async function loadData() {
@@ -79,6 +80,7 @@
           return;
         }
         HIST = d;
+        console.log("🚨 HIST raw data:", HIST);
         // Affiche la valeur actuelle
         const last = HIST[HIST.length - 1];
         const cp = last ? last.v.toLocaleString() : "N/A";
@@ -97,17 +99,20 @@
         ? HIST
         : HIST.filter(pt => pt.t * 1000 >= Date.now() - days * 24 * 3600 * 1000);
 
+      const labels = pts.map(pt => new Date(pt.t * 1000).toLocaleDateString());
+      const data   = pts.map(pt => pt.v);
+
       // Construis la config JSON inline
       const cfg = {
         type: 'line',
         data: {
-          labels: pts.map(pt => new Date(pt.t * 1000).toLocaleDateString()),
+          labels: labels,
           datasets: [{
             label: item,
-            data: pts.map(pt => pt.v),
+            data: data,
             borderColor: '#1FB6FF',
             backgroundColor: 'rgba(31,182,255,0.2)',
-            pointRadius: 0,
+            pointRadius: 3,
             tension: 0.2
           }]
         },
@@ -123,20 +128,20 @@
       };
 
       // Encode et renvoie l'URL
-      return 'https://quickchart.io/chart?c='
+      const url = 'https://quickchart.io/chart?c='
         + encodeURIComponent(JSON.stringify(cfg))
         + '&width=800&height=400';
+      console.log("QuickChart URL:", url);
+      return url;
     }
 
-    // Affiche l’image et log l’URL pour debug
-    let currentRange = 0;
+    // Affiche l’image
     function render(days) {
       currentRange = days;
       document.querySelectorAll('#controls button')
         .forEach(b => b.classList.toggle('active', Number(b.dataset.range) === days));
 
       const url = makeQC(days);
-      console.log("QuickChart URL:", url);  // ← DEBUG : copie cette URL
       document.getElementById('chart').innerHTML =
         `<img src="${url}" alt="Historique ${item}" />`;
     }
