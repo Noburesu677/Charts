@@ -5,9 +5,10 @@
   <title>Historique AnomicValue</title>
   <style>
     html, body { margin:0; padding:0; background:#1e1e1e; color:#fff; }
-    #chart { width:100%; height:90vh; }
+    #chart { width:100%; height:85vh; }
     #controls { text-align:center; padding:8px; }
     button { margin:0 4px; padding:6px 12px; }
+    p { padding:20px; }
   </style>
   <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 </head>
@@ -21,34 +22,47 @@
     <button onclick="setRange()">All</button>
   </div>
   <div id="chart"></div>
+  <p id="message"></p>
+
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const item   = params.get('item') || params.get('name');
-    if(!item){
-      document.body.innerHTML = '<p style="padding:20px;">Passe ?item=NomDeItem</p>';
-      throw '';
+    // 1) On lit item ou name dans l'URL
+    const params = new URLSearchParams(location.search);
+    const item = params.get("item") || params.get("name");
+    if (!item) {
+      document.getElementById("message").textContent = "⚠️ Passe ?item=NomDeItem";
+      throw "";
     }
-    fetch(`https://script.google.com/macros/s/AKfycbz-…/exec?name=${encodeURIComponent(item)}`)
-      .then(r=>r.json())
-      .then(data=>{
-        if(data.error){
-          document.body.innerHTML = `<p style="padding:20px;">${data.error}</p>`;
-          return;
-        }
-        const chart = LightweightCharts.createChart(document.getElementById('chart'), {
-          layout: { backgroundColor:'#1e1e1e', textColor:'rgba(255,255,255,0.9)' },
-          grid: { vertLines:{color:'#333'}, horzLines:{color:'#333'} },
-          timeScale:{ timeVisible:true }
-        });
-        const series = chart.addLineSeries({ color:'cyan', lineWidth:2 });
-        series.setData(data);
-        window.setRange = days=>{
-          if(!days) return chart.timeScale().fitContent();
-          const to = chart.timeScale().getVisibleRange().to;
-          chart.timeScale().setVisibleRange({ from: to - days*24*3600, to });
-        };
-      })
-      .catch(_=>document.body.innerHTML='<p style="padding:20px;">Erreur réseau</p>');
+
+    // 2) On injecte dynamiquement le JSONP
+    const script = document.createElement("script");
+    script.src = "https://script.google.com/macros/s/TA_CLE/exec"
+                + "?name=" + encodeURIComponent(item)
+                + "&callback=init";
+    document.head.appendChild(script);
+
+    // 3) Cette fonction sera appelée par JSONP
+    function init(data) {
+      if (data.error) {
+        document.getElementById("message").textContent = data.error;
+        return;
+      }
+      // Crée le chart
+      const chart = LightweightCharts.createChart(document.getElementById("chart"), {
+        layout: { backgroundColor:"#1e1e1e", textColor:"rgba(255,255,255,0.9)" },
+        grid: { vertLines:{color:"#333"}, horzLines:{color:"#333"} },
+        timeScale: { timeVisible:true }
+      });
+      const series = chart.addLineSeries({ color:"cyan", lineWidth:2 });
+      series.setData(data);
+
+      // 4) La fonction pour zoomer
+      window.setRange = days => {
+        if (!days) return chart.timeScale().fitContent();
+        const vr = chart.timeScale().getVisibleRange();
+        const to = vr.to;
+        chart.timeScale().setVisibleRange({ from: to - days*24*3600, to });
+      };
+    }
   </script>
 </body>
 </html>
