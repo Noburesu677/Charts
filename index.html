@@ -1,67 +1,122 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <title>Historique AnomicValue</title>
   <style>
-    html, body { margin:0; padding:0; background:#1e1e1e; color:#fff; }
-    #chart { width:100%; height:85vh; }
-    #controls { text-align:center; padding:8px; }
-    button { margin:0 4px; padding:6px 12px; }
-    p { padding:20px; }
+    html, body { margin: 0; padding: 0; background: #1e1e1e; color: #fff; font-family: sans-serif; }
+    #controls { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px; padding: 8px; }
+    #controls button {
+      background: #2f3136; border: 1px solid #444; color: #ddd; padding: 4px 8px; cursor: pointer;
+    }
+    #controls button.active { background: #5865f2; color: #fff; }
+    #chart { height: calc(100vh - 200px); }
+    #overview { height: 100px; margin-top: 8px; }
   </style>
   <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
   <div id="controls">
-    <button onclick="setRange(1)">1d</button>
-    <button onclick="setRange(7)">1w</button>
-    <button onclick="setRange(30)">1m</button>
-    <button onclick="setRange(90)">3m</button>
-    <button onclick="setRange(365)">1y</button>
-    <button onclick="setRange()">All</button>
+    <button data-range="1">1d</button>
+    <button data-range="3">3d</button>
+    <button data-range="7">1w</button>
+    <button data-range="30">1m</button>
+    <button data-range="90">3m</button>
+    <button data-range="180">6m</button>
+    <button data-range="365">1y</button>
+    <button data-range="0" class="active">All</button>
   </div>
   <div id="chart"></div>
-  <p id="message"></p>
+  <div id="overview"></div>
+  <p id="message" style="text-align:center; padding:10px;"></p>
 
   <script>
-    // 1) On lit "item" ou "name" dans l'URL
+    // Récupère l'item depuis l'URL
     const params = new URLSearchParams(location.search);
-    const item = params.get("item") || params.get("name");
+    const item   = params.get('item') || params.get('name');
     if (!item) {
-      document.getElementById("message").textContent = "⚠️ Passe ?item=NomDeItem";
-      throw "";
+      document.getElementById('message').textContent = '⚠️ Passe ?item=NomDeTonItem';
+      throw '';
     }
 
-    // 2) JSONP vers ton Apps Script
-    const script = document.createElement("script");
-    script.src = "https://script.google.com/macros/s/AKfycbyX-_XhaZi2M05lP3B67oIxsg9j8oTC0t7VvYHwALlKYCe96ceowiUiwiX6chRwzEwY0Q/exec"
-                + "?name=" + encodeURIComponent(item)
-                + "&callback=init";
+    // Charge les données JSONP depuis Apps Script
+    const script = document.createElement('script');
+    script.src = 'https://script.google.com/macros/s/AKfycbyX-_XhaZi2M05lP3B67oIxsg9j8oTC0t7VvYHwALlKYCe96ceowiUiwiX6chRwzEwY0Q/exec'
+               + '?name=' + encodeURIComponent(item)
+               + '&callback=init';
     document.head.appendChild(script);
 
-    // 3) Cette fonction sera appelée avec les données
+    let mainChart, overviewChart, mainSeries, overviewSeries, fullData;
+
     function init(data) {
       if (data.error) {
-        document.getElementById("message").textContent = data.error;
+        document.getElementById('message').textContent = data.error;
         return;
       }
-      const chart = LightweightCharts.createChart(document.getElementById("chart"), {
-        layout: { backgroundColor:"#1e1e1e", textColor:"rgba(255,255,255,0.9)" },
-        grid: { vertLines:{color:"#333"}, horzLines:{color:"#333"} },
-        timeScale: { timeVisible:true }
-      });
-      const series = chart.addLineSeries({ color:"cyan", lineWidth:2 });
-      series.setData(data);
 
-      // 4) Fonction de zoom
-      window.setRange = days => {
-        if (!days) return chart.timeScale().fitContent();
-        const vr = chart.timeScale().getVisibleRange();
-        const to = vr.to;
-        chart.timeScale().setVisibleRange({ from: to - days*24*3600, to });
-      };
+      // pré-formatage : transforme t (unix sec) en { time: 'YYYY-MM-DD', value: v }
+      fullData = data.map(pt => ({
+        time: new Date(pt.t * 1000).toISOString().split('T')[0],
+        value: pt.v
+      }));
+
+      // création du chart principal
+      mainChart = LightweightCharts.createChart(
+        document.getElementById('chart'),
+        {
+          layout: { backgroundColor:'#1e1e1e', textColor:'#fff' },
+          grid: { vertLines:{color:'#444'}, horzLines:{color:'#444'} },
+          rightPriceScale: { borderColor:'#666' },
+          timeScale: { borderColor:'#666', timeVisible:true },
+        }
+      );
+      mainSeries = mainChart.addLineSeries({ color:'#00bcd4', lineWidth:2 });
+      mainSeries.setData(fullData);
+
+      // création de l'overview (mini-courbe)
+      overviewChart = LightweightCharts.createChart(
+        document.getElementById('overview'),
+        {
+          layout: { backgroundColor:'#1e1e1e', textColor:'#888' },
+          grid: { vertLines:{color:'#333'}, horzLines:{color:'#333'} },
+          handleScroll: false, handleScale: false,
+          timeScale: { visible: false, borderColor:'#666' },
+          rightPriceScale: { visible: false }
+        }
+      );
+      overviewSeries = overviewChart.addAreaSeries({
+        topColor: 'rgba(0,188,212,0.5)',
+        bottomColor: 'rgba(0,188,212,0.0)',
+        lineColor: 'rgba(0,188,212,1)'
+      });
+      overviewSeries.setData(fullData);
+
+      // liaison du timeScale principal à l'overview
+      mainChart.timeScale().subscribeVisibleTimeRangeChange(range => {
+        overviewChart.timeScale().setVisibleRange(range);
+      });
+
+      // active le bouton "All" par défaut
+      document.querySelector('[data-range="0"]').classList.add('active');
     }
+
+    // gestion des boutons de plage de temps
+    document.getElementById('controls').addEventListener('click', e => {
+      if (e.target.tagName !== 'BUTTON') return;
+      document.querySelectorAll('#controls button').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+
+      const days = Number(e.target.getAttribute('data-range'));
+      if (!mainChart) return;
+      if (days === 0) {
+        mainChart.timeScale().fitContent();
+      } else {
+        const furthest = mainChart.timeScale().getVisibleRange().to || fullData[fullData.length-1].time;
+        const to = typeof furthest === 'object' ? furthest : (new Date(furthest).getTime()/1000);
+        const from = to - days*24*3600;
+        mainChart.timeScale().setVisibleRange({ from, to });
+      }
+    });
   </script>
 </body>
 </html>
