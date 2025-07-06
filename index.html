@@ -25,7 +25,7 @@
   <p id="message"></p>
 
   <script>
-    // 1) On lit item ou name dans l'URL
+    // 1) On lit "item" ou "name" dans l'URL
     const params = new URLSearchParams(location.search);
     const item = params.get("item") || params.get("name");
     if (!item) {
@@ -33,20 +33,19 @@
       throw "";
     }
 
-    // 2) On injecte dynamiquement le JSONP
+    // 2) JSONP vers ton Apps Script
     const script = document.createElement("script");
-    script.src = "https://script.google.com/macros/s/TA_CLE/exec"
+    script.src = "https://script.google.com/macros/s/AKfycbyX-_XhaZi2M05lP3B67oIxsg9j8oTC0t7VvYHwALlKYCe96ceowiUiwiX6chRwzEwY0Q/exec"
                 + "?name=" + encodeURIComponent(item)
                 + "&callback=init";
     document.head.appendChild(script);
 
-    // 3) Cette fonction sera appelée par JSONP
+    // 3) Cette fonction sera appelée avec les données
     function init(data) {
       if (data.error) {
         document.getElementById("message").textContent = data.error;
         return;
       }
-      // Crée le chart
       const chart = LightweightCharts.createChart(document.getElementById("chart"), {
         layout: { backgroundColor:"#1e1e1e", textColor:"rgba(255,255,255,0.9)" },
         grid: { vertLines:{color:"#333"}, horzLines:{color:"#333"} },
@@ -55,7 +54,7 @@
       const series = chart.addLineSeries({ color:"cyan", lineWidth:2 });
       series.setData(data);
 
-      // 4) La fonction pour zoomer
+      // 4) Fonction de zoom
       window.setRange = days => {
         if (!days) return chart.timeScale().fitContent();
         const vr = chart.timeScale().getVisibleRange();
