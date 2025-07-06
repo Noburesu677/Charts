@@ -4,23 +4,20 @@
   <meta charset="UTF-8" />
   <title>Historique AnomicValue</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; background: #141517; color: #DDD; font-family: sans-serif; }
-    #container { display: flex; flex-direction: column; height: 100%; }
+    html, body { margin:0; padding:0; background:#141517; color:#DDD; height:100%; font-family:sans-serif; }
+    #container { display:flex; flex-direction:column; height:100%; }
     #controls {
-      display: flex; justify-content: center; gap: 8px;
-      background: #1E1F22; padding: 10px; border-bottom:1px solid #333;
+      display:flex; justify-content:center; gap:8px;
+      background:#1E1F22; padding:10px; border-bottom:1px solid #333;
     }
     #controls button {
-      background: #2A2C31; border:1px solid #444; border-radius:4px;
+      background:#2A2C31; border:1px solid #444; border-radius:4px;
       color:#BBB; padding:6px 12px; cursor:pointer; transition:0.2s;
     }
     #controls button.active { background:#5865F2; color:#fff; }
     #controls button:hover { background:#3A3D44; color:#fff; }
-    #chart-container {
-      flex:1; padding:10px; background:#1E1F22;
-    }
-    canvas { width:100% !important; height:100% !important; }
+    #chart { flex:1; background:#1E1F22; display:flex; justify-content:center; align-items:center; }
+    #chart img { max-width:100%; max-height:100%; }
     footer {
       text-align:right; font-size:0.75em;
       padding:6px 12px; background:#1E1F22; border-top:1px solid #333;
@@ -28,23 +25,19 @@
     footer a { color:#555; text-decoration:none; }
     footer a:hover { color:#AAA; }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-  <script src="https://cdn.jsdelivr.net/npm/moment@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@3"></script>
 </head>
 <body>
   <div id="container">
     <div id="controls">
       <button data-range="1">1d</button>
-      <button data-range="3">3d</button>
       <button data-range="7">1w</button>
       <button data-range="30">1m</button>
       <button data-range="90">3m</button>
       <button data-range="365">1y</button>
       <button data-range="0" class="active">All</button>
     </div>
-    <div id="chart-container">
-      <canvas id="chart"></canvas>
+    <div id="chart">
+      <p style="color:#888;">Chargement…</p>
     </div>
     <footer>
       <a href="https://discord.gg/jM2AQXtZ" target="_blank">Join AnomicValue Discord</a>
@@ -52,91 +45,78 @@
   </div>
 
   <script>
-    // Plugin pour fond sombre
-    const bgPlugin = {
-      id: 'bgPlugin',
-      beforeDraw(chart) {
-        const {ctx, width, height} = chart;
-        ctx.save();
-        ctx.fillStyle = '#1E1F22';
-        ctx.fillRect(0,0,width,height);
-        ctx.restore();
-      }
-    };
-
-    // Récupère l’item
+    // 1) paramètre item
     const params = new URLSearchParams(location.search);
     const item   = params.get('item') || params.get('name');
     if (!item) {
-      document.getElementById('chart-container').innerHTML =
-        '<p style="padding:20px; text-align:center; color:#EEE;">⚠️ Passe <code>?item=NomDeTonItem</code></p>';
+      document.getElementById('chart').innerHTML =
+        '<p style="color:#EEE;">⚠️ Passe <code>?item=NomDeTonItem</code></p>';
       throw '';
     }
 
-    // JSONP vers ton Apps Script
-    const jsonp = document.createElement('script');
-    jsonp.src =
-      'https://script.google.com/macros/s/AKfycbyX-_XhaZi2M05lP3B67oIxsg9j8oTC0t7VvYHwALlKYCe96ceowiUiwiX6chRwzEwY0Q/exec'
-      + '?name=' + encodeURIComponent(item)
-      + '&callback=init';
-    document.head.appendChild(jsonp);
-
-    let chart, fullData = [];
-
-    // Callback JSONP
-    function init(data) {
-      console.log('🚀 Data reçue :', data);
-      if (data.error) {
-        document.getElementById('chart-container').innerHTML =
-          `<p style="padding:20px; text-align:center; color:#E66;">❌ ${data.error}</p>`;
-        return;
-      }
-      fullData = data.map(pt => ({ x: pt.t * 1000, y: pt.v }));
-
-      const ctx = document.getElementById('chart').getContext('2d');
-      chart = new Chart(ctx, {
-        type: 'line',
-        data: { datasets:[{
-          label: item,
-          data: fullData,
-          borderColor: '#1FB6FF',
-          backgroundColor: 'rgba(31,182,255,0.2)',
-          pointRadius: 0,
-          tension: 0.2
-        }]},
-        options: {
-          responsive:true, maintainAspectRatio:false,
-          scales:{
-            x:{ type:'time', time:{ unit:'month' },
-                grid:{color:'#333'}, ticks:{color:'#CCC'} },
-            y:{ grid:{color:'#333'},
-                ticks:{color:'#CCC', callback:v=>v.toLocaleString()} }
-          },
-          plugins:{
-            legend:{labels:{color:'#EEE'}},
-            tooltip:{mode:'index',intersect:false}
-          },
-          interaction:{mode:'index',intersect:false}
-        },
-        plugins:[ bgPlugin ]
+    // 2) fetch JSON
+    fetch('https://script.google.com/macros/s/AKfycbyX-_XhaZi2M05lP3B67oIxsg9j8oTC0t7VvYHwALlKYCe96ceowiUiwiX6chRwzEwY0Q/exec?name='
+      + encodeURIComponent(item))
+      .then(r => r.json())
+      .then(d => {
+        if (d.error) {
+          document.getElementById('chart').innerHTML =
+            `<p style="color:#E66;">❌ ${d.error}</p>`;
+          return;
+        }
+        window.HIST_DATA = d;    // on garde en global
+        renderChart('All');
       });
+
+    // 3) fonction pour générer l'URL QuickChart
+    function qcUrl(rangeDays) {
+      // labels / data
+      const pts = rangeDays === 0
+        ? HIST_DATA
+        : HIST_DATA.filter(pt=> pt.t*1000 >= Date.now() - rangeDays*864e5);
+      const labels = pts.map(pt=>new Date(pt.t*1000).toLocaleDateString());
+      const data   = pts.map(pt=>pt.v);
+      const cfg = {
+        type:'line',
+        data:{ labels, datasets:[{
+          label: item,
+          data,
+          borderColor:'#1FB6FF',
+          backgroundColor:'rgba(31,182,255,0.2)',
+          pointRadius:0,
+          tension:0.2
+        }]},
+        options:{
+          plugins:{ legend:{ labels:{ color:'#EEE' } } },
+          scales:{
+            x:{ ticks:{ color:'#CCC' }, grid:{ color:'#333' } },
+            y:{ ticks:{ color:'#CCC' }, grid:{ color:'#333' } }
+          },
+          layout:{ padding:20 },
+          backgroundColor:'#141517'
+        }
+      };
+      return 'https://quickchart.io/chart?c='
+        + encodeURIComponent(JSON.stringify(cfg))
+        + '&width=800&height=400&devicePixelRatio=2';
     }
 
-    // Gestion des boutons période
-    document.getElementById('controls').addEventListener('click', e=>{
-      if(e.target.tagName!=='BUTTON' || !chart) return;
+    // 4) affiche le chart (image)
+    function renderChart(range) {
       document.querySelectorAll('#controls button').forEach(b=>b.classList.remove('active'));
-      e.target.classList.add('active');
+      const btn = document.querySelector(`#controls button[data-range="${range}"]`);
+      if (btn) btn.classList.add('active');
+
+      const url = qcUrl(range);
+      document.getElementById('chart').innerHTML =
+        `<img src="${url}" alt="Historique de ${item}" />`;
+    }
+
+    // 5) clics sur boutons
+    document.getElementById('controls').addEventListener('click', e=>{
+      if(e.target.tagName!=='BUTTON') return;
       const days = Number(e.target.dataset.range);
-      if (days===0) {
-        chart.options.scales.x.min = null;
-        chart.options.scales.x.max = null;
-      } else {
-        const now=Date.now();
-        chart.options.scales.x.min = now - days*24*3600*1000;
-        chart.options.scales.x.max = now;
-      }
-      chart.update();
+      renderChart(days);
     });
   </script>
 </body>
