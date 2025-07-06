@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Historique AnomicValue</title>
   <style>
-    * { box-sizing:border-box; margin:0; padding:0; }
-    html, body { height:100%; background:#141517; color:#DDD; font-family:sans-serif;}
-    #container { display:flex; flex-direction:column; height:100%; }
+    * { box-sizing: border-box; margin:0; padding:0; }
+    html, body { height:100%; background:#141517; color:#DDD; font-family:sans-serif; }
     #controls {
       display:flex; justify-content:center; gap:8px;
       background:#1E1F22; padding:10px; border-bottom:1px solid #333;
@@ -17,25 +16,26 @@
     }
     #controls button.active { background:#5865F2; color:#fff; }
     #controls button:hover { background:#3A3D44; color:#fff; }
-    #chart { flex:1; display:flex; justify-content:center; align-items:center; }
-    #chart img { max-width:100%; max-height:100%; background:#1E1F22;}
+    #chart { flex:1; display:flex; justify-content:center; align-items:center; background:#1E1F22; }
+    #chart img { max-width:100%; max-height:100%; }
     footer {
       text-align:right; font-size:0.75em;
       padding:6px 12px; background:#1E1F22; border-top:1px solid #333;
     }
     footer a { color:#555; text-decoration:none; }
     footer a:hover { color:#AAA; }
+    #container { display:flex; flex-direction:column; height:100%; }
   </style>
 </head>
 <body>
   <div id="container">
     <div id="controls">
+      <button data-range="0" class="active">All</button>
       <button data-range="1">1d</button>
       <button data-range="7">1w</button>
       <button data-range="30">1m</button>
       <button data-range="90">3m</button>
       <button data-range="365">1y</button>
-      <button data-range="0" class="active">All</button>
     </div>
     <div id="chart">
       <p style="color:#888;">Chargement…</p>
@@ -46,85 +46,62 @@
   </div>
 
   <script>
-    // 1) Récupère l’item
-    const params = new URLSearchParams(location.search);
-    const item   = params.get('item') || params.get('name');
+    const APP_URL = "https://script.google.com/macros/s/AKfycbyX-_XhaZi2M05lP3B67oIxsg9j8oTC0t7VvYHwALlKYCe96ceowiUiwiX6chRwzEwY0Q/exec";
+    const params  = new URLSearchParams(location.search);
+    const item    = params.get('item') || params.get('name');
+    const chartEl = document.getElementById('chart');
     if (!item) {
-      document.getElementById('chart').innerHTML =
-        '<p style="padding:20px; text-align:center; color:#EEE;">⚠️ Passe <code>?item=NomDeTonItem</code></p>';
+      chartEl.innerHTML = '<p style="padding:20px;color:#EEE;">⚠️ Passe <code>?item=NomDeTonItem</code></p>';
       throw '';
     }
 
-    // 2) Prépare la fonction pour générer l’URL QuickChart
-    window.HIST = null;
-    async function loadData() {
-      try {
-        const res = await fetch(
-          'https://script.google.com/macros/s/TA_CLE/exec?name='
-          + encodeURIComponent(item)
-        );
-        const d = await res.json();
-        HIST = Array.isArray(d) ? d : [];
-        renderChart(currentRange);
-      } catch(e) {
-        document.getElementById('chart').innerHTML =
-          '<p style="color:#E66; padding:20px; text-align:center;">Erreur réseau</p>';
-      }
-    }
-
-    // 3) Génère l’URL de l’image QuickChart selon la plage
-    function makeUrl(days) {
-      const pts = (HIST || []).filter(pt => {
-        if (days===0) return true;
-        return pt.t*1000 >= Date.now() - days*24*3600*1000;
-      });
-      const labels = pts.map(pt => new Date(pt.t*1000).toLocaleDateString());
-      const data   = pts.map(pt => pt.v);
+    // Génère l'URL QuickChart avec data-url pointant vers ton Apps Script
+    function makeQC(rangeDays) {
+      // Config JSON de QuickChart
       const cfg = {
         type: 'line',
-        data: { labels, datasets:[{
+        data: { datasets: [{
           label: item,
-          data,
-          borderColor: '#1FB6FF',
-          backgroundColor: 'rgba(31,182,255,0.2)',
-          pointRadius: 0,
-          tension: 0.2
+          // QuickChart va charger data via data-url
+          data: { /* vide */ }
         }]},
         options: {
           plugins:{ legend:{ labels:{ color:'#EEE' }}},
           scales:{
-            x:{ ticks:{ color:'#CCC'}, grid:{color:'#333'} },
-            y:{ ticks:{ color:'#CCC'}, grid:{color:'#333'} }
+            x:{ type:'time', time:{ unit:'day' }, grid:{color:'#333'}, ticks:{color:'#CCC'} },
+            y:{ grid:{color:'#333'}, ticks:{color:'#CCC'} }
           },
           layout:{ padding:20 },
           backgroundColor:'#141517'
         }
       };
-      return 'https://quickchart.io/chart?c='
-        + encodeURIComponent(JSON.stringify(cfg))
-        + '&width=800&height=400&devicePixelRatio=2';
+
+      // Data-url param : on ajoute &rangeDays pour filtrage côté QuickChart? non, on filtre avant
+      const dataUrl = APP_URL + "?name=" + encodeURIComponent(item);
+
+      // On encode :
+      return "https://quickchart.io/chart?c=" + encodeURIComponent(JSON.stringify(cfg))
+           + "&data-url=" + encodeURIComponent(dataUrl)
+           + "&fetch-datasource=true"
+           + "&width=800&height=400&devicePixelRatio=2"
+           + (rangeDays>0 ? "&cacheSeconds=0&format=png&backgroundColor=%23141A1D&range=" + rangeDays : "");
     }
 
-    // 4) Affiche l’image
-    function renderChart(days) {
-      currentRange = days;
-      document.querySelectorAll('#controls button')
-        .forEach(b => b.classList.toggle('active', Number(b.dataset.range)===days));
-      const url = makeUrl(days);
-      document.getElementById('chart').innerHTML =
-        `<img src="${url}" alt="Graphique ${item}" />`;
+    // Affiche l'image
+    function render(range) {
+      document.querySelectorAll('#controls button').forEach(b=>b.classList.toggle('active', Number(b.dataset.range)===range));
+      const url = makeQC(range);
+      chartEl.innerHTML = `<img src="${url}" alt="Historique ${item}" />`;
     }
 
-    // 5) Gestion des boutons
-    let currentRange = 0;
-    document.getElementById('controls')
-      .addEventListener('click', e => {
-        if (e.target.tagName!=='BUTTON') return;
-        renderChart(Number(e.target.dataset.range));
-      });
+    // Boutons
+    document.getElementById('controls').addEventListener('click', e=>{
+      if (e.target.tagName!=='BUTTON') return;
+      render(Number(e.target.dataset.range));
+    });
 
-    // 6) On charge les données et on affiche
-    loadData();
+    // Lancement initial
+    render(0);
   </script>
 </body>
 </html>
