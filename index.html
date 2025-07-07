@@ -9,7 +9,6 @@
     rel="stylesheet"
   />
   <link rel="stylesheet" href="assets/style.css" />
-  <!-- Chart.js for interactive charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -31,19 +30,13 @@
 
   <main>
     <div id="chartContainer" class="fade-in-up">
-      <!-- Loading overlay -->
-      <div id="loadingOverlay">
-        <div class="spinner"></div>
-      </div>
-      <!-- Mini-sparkline -->
+      <div id="loadingOverlay"><div class="spinner"></div></div>
       <canvas id="miniChart" width="200" height="50"></canvas>
-      <!-- Controls -->
       <div class="chart-controls">
         <button id="contrastBtn">High Contrast</button>
         <button id="fullscreenBtn">⤢ Fullscreen</button>
       </div>
-      <!-- Main chart -->
-      <canvas id="mainChart" width="700" height="400"></canvas>
+      <canvas id="mainChart"></canvas>
     </div>
   </main>
 
@@ -52,18 +45,17 @@
   </footer>
 
   <script>
-    // Définition des constantes
     const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzyaaDiRnXsKyx5-CwD_XFzPoCswdJoU_yfNLdmvanYPrgrUg_CjLDs8KlIHOLevsiSTg/exec';
     const GH_PAGES_BASE  = 'https://noburesu677.github.io/Charts';
     const mainCtx = document.getElementById('mainChart').getContext('2d');
     const miniCtx = document.getElementById('miniChart').getContext('2d');
     let mainChart, miniChart;
 
-    // Animation dunes (inchangé)
+    // dunes animation (inchangé)...
     const canvas = document.getElementById('duneCanvas'), ctx = canvas.getContext('2d');
-    let w, h, t = 0;
-    function resize() { w=canvas.width=innerWidth; h=canvas.height=innerHeight; }
-    onresize = resize; resize();
+    let w,h,t=0;
+    function resize(){ w=canvas.width=innerWidth; h=canvas.height=innerHeight; }
+    onresize=resize; resize();
     (function draw(){
       ctx.clearRect(0,0,w,h);
       for(let i=0;i<3;i++){
@@ -72,97 +64,103 @@
         ctx.beginPath();
         ctx.moveTo(0,y);
         for(let x=0;x<=w;x+=20)
-          ctx.lineTo(x,y+Math.sin(x*0.02+t*spd)*amp);
+          ctx.lineTo(x, y + Math.sin(x*0.02 + t*spd)*amp);
         ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath(); ctx.fill();
       }
       t+=0.01; requestAnimationFrame(draw);
     })();
 
-    // Chargement des données + update des charts
-    async function loadChart(mode) {
+    async function loadChart(mode){
       const item = new URLSearchParams(location.search).get('item');
-      if(!item) throw 'Missing ?item=…';
+      if(!item) throw 'Missing ?item';
       const r = await fetch(`${APP_SCRIPT_URL}?name=${encodeURIComponent(item)}`);
-      if(!r.ok) throw `Network ${r.status}`;
+      if(!r.ok) throw `HTTP ${r.status}`;
       const data = await r.json();
-      if(!Array.isArray(data) || data.length===0) throw 'No data';
-      // group by date
+      if(!Array.isArray(data)||!data.length) throw 'No data';
       const grouped = {};
       data.forEach(p=>{
-        const d=new Date(p.t*1000), lbl=`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+        const d=new Date(p.t*1000),
+              lbl=`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
         grouped[lbl]=p.v;
       });
-      return {
-        labels: Object.keys(grouped),
-        values: Object.values(grouped)
-      };
+      return {labels:Object.keys(grouped), values:Object.values(grouped)};
     }
 
-    async function updateCharts(mode) {
-      // show loader
+    async function updateCharts(mode){
       document.getElementById('loadingOverlay').style.display='flex';
-      try {
-        const {labels, values} = await loadChart(mode);
-        // main chart
-        if(mainChart) mainChart.data.labels = labels, mainChart.data.datasets[0].data = values, mainChart.update();
-        else mainChart = new Chart(mainCtx, {
-          type:'line',
-          data:{ labels, datasets:[{
-            label: 'Price',
-            data: values,
-            borderColor:'red',
-            backgroundColor:'transparent',
-            pointRadius:5
-          }]},
-          options:{
-            responsive:true,
-            interaction:{mode:'index', intersect:false},
-            plugins:{tooltip:{enabled:true, backgroundColor:'#000'}},
-            animation:{duration:800},
-            scales:{
-              x:{ticks:{color:'#fff'}, grid:{color:'#444'}},
-              y:{ticks:{color:'#fff'}, grid:{color:'#444'}}
+      try{
+        const {labels,values} = await loadChart(mode);
+
+        // Main chart
+        if(mainChart){
+          mainChart.data.labels=labels;
+          mainChart.data.datasets[0].data=values;
+          mainChart.update();
+        } else {
+          mainChart = new Chart(mainCtx, {
+            type:'line', data:{
+              labels, datasets:[{
+                label:'Price',
+                data:values,
+                borderColor:'red',
+                backgroundColor:'transparent',
+                pointRadius:5
+              }]
+            },
+            options:{
+              responsive:true,
+              interaction:{mode:'nearest', intersect:true},  // ← tooltip only on point
+              plugins:{tooltip:{enabled:true, backgroundColor:'#000'}},
+              animation:{duration:800},
+              scales:{
+                x:{ticks:{color:'#fff'}, grid:{color:'#444'}},
+                y:{ticks:{color:'#fff'}, grid:{color:'#444'}}
+              }
             }
-          }
-        });
-        // mini sparkline
-        if(miniChart) miniChart.data.labels=labels, miniChart.data.datasets[0].data=values, miniChart.update();
-        else miniChart = new Chart(miniCtx, {
-          type:'line',
-          data:{ labels, datasets:[{
-            data: values, borderColor:'#ff7700', backgroundColor:'transparent', pointRadius:0
-          }]},
-          options:{responsive:true, animation:{duration:500}, plugins:{legend:{display:false}}, scales:{x:{display:false}, y:{display:false}}}
-        });
-      } catch(e) {
+          });
+        }
+
+        // Mini sparkline
+        if(miniChart){
+          miniChart.data.labels=labels;
+          miniChart.data.datasets[0].data=values;
+          miniChart.update();
+        } else {
+          miniChart = new Chart(miniCtx, {
+            type:'line', data:{
+              labels, datasets:[{
+                data:values,
+                borderColor:'#ff7700',
+                backgroundColor:'transparent',
+                pointRadius:0
+              }]
+            },
+            options:{responsive:true, animation:{duration:500}, plugins:{legend:{display:false}}, scales:{x:{display:false}, y:{display:false}}}
+          });
+        }
+
+      }catch(e){
         console.error(e);
-        document.getElementById('chartContainer').querySelector('canvas').style.display='none';
-      } finally {
+      }finally{
         document.getElementById('loadingOverlay').style.display='none';
       }
     }
 
-    // Gestion onglets
     document.querySelectorAll('nav a').forEach(a=>{
-      a.onclick = e=>{
+      a.onclick=e=>{
         e.preventDefault();
         document.querySelectorAll('nav a').forEach(n=>n.classList.remove('active'));
         a.classList.add('active');
-        updateCharts(a.getAttribute('href').substring(1));
+        updateCharts(a.getAttribute('href').slice(1));
       };
     });
-    window.addEventListener('DOMContentLoaded', ()=>{ document.querySelector('nav a[href="#all"]').click(); });
+    window.addEventListener('DOMContentLoaded',()=>document.querySelector('nav a[href="#all"]').click());
 
-    // Fullscreen toggle
-    document.getElementById('fullscreenBtn').onclick = ()=>{
-      const el = document.getElementById('chartContainer');
-      document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen();
+    document.getElementById('fullscreenBtn').onclick=()=>{
+      const el=document.getElementById('chartContainer');
+      document.fullscreenElement?document.exitFullscreen():el.requestFullscreen();
     };
-
-    // High contrast toggle
-    document.getElementById('contrastBtn').onclick = ()=>{
-      document.body.classList.toggle('high-contrast');
-    };
+    document.getElementById('contrastBtn').onclick=()=>document.body.classList.toggle('high-contrast');
   </script>
 </body>
 </html>
