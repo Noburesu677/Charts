@@ -4,16 +4,24 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>AnomicValue Charts</title>
+
+  <!-- Police rétro -->
   <link
     href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
     rel="stylesheet"
   />
+
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="assets/style.css?v=4" />
+
+  <!-- Ton CSS versionné pour forcer le refresh -->
+  <link rel="stylesheet" href="assets/style.css?v=5" />
 </head>
 <body>
+  <!-- Canvas pour l’animation des dunes -->
   <canvas id="duneCanvas"></canvas>
 
+  <!-- En-tête fixe -->
   <header class="fade-in-down">
     <div class="logo">
       <img src="assets/logo.png" alt="AnomicValue" />
@@ -28,6 +36,7 @@
     </nav>
   </header>
 
+  <!-- Conteneur principal du graphique -->
   <main>
     <div id="chartContainer" class="fade-in-up">
       <div id="loadingOverlay"><div class="spinner"></div></div>
@@ -40,10 +49,12 @@
     </div>
   </main>
 
+  <!-- Pied de page -->
   <footer class="fade-in-up">
     <p>© 2025 AnomicValue. All rights reserved.</p>
   </footer>
 
+  <!-- Script principal -->
   <script>
     const APP_SCRIPT_URL =
       'https://script.google.com/macros/s/AKfycbzyaaDiRnXsKyx5-CwD_XFzPoCswdJoU_yfNLdmvanYPrgrUg_CjLDs8KlIHOLevsiSTg/exec';
@@ -51,7 +62,7 @@
     const miniCtx = document.getElementById('miniChart').getContext('2d');
     let mainChart, miniChart;
 
-    // Dunes animation
+    // Animation dunes
     const canvas = document.getElementById('duneCanvas'),
           ctx    = canvas.getContext('2d');
     let w, h, t = 0;
@@ -179,7 +190,7 @@
       }
     }
 
-    // Tabs
+    // Onglets
     document.querySelectorAll('nav a').forEach(a => {
       a.addEventListener('click', e => {
         e.preventDefault();
@@ -193,14 +204,14 @@
       document.querySelector('nav a[href="#all"]').click();
     });
 
-    // Fullscreen toggle
+    // Fullscreen
     document.getElementById('fullscreenBtn').addEventListener('click', () => {
       const el = document.getElementById('chartContainer');
       if(document.fullscreenElement) document.exitFullscreen();
       else el.requestFullscreen();
     });
 
-    // High Contrast toggle
+    // High Contrast
     document.getElementById('contrastBtn').addEventListener('click', () => {
       document.body.classList.toggle('high-contrast');
     });
