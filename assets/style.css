@@ -1,11 +1,12 @@
 /* assets/style.css */
 
-/* === Variables & Reset === */
+/* === Variables & reset === */
 :root {
   --bg: #1a0a00;
   --text: #ffeedd;
   --accent: #ff7700;
-  --dark: #111;
+  --contrast-bg: #ffeedd;
+  --contrast-text: #1a0a00;
 }
 * {
   margin: 0;
@@ -21,10 +22,12 @@ body {
   min-height: 100vh;
 }
 .high-contrast {
-  filter: contrast(200%) brightness(120%);
+  background: var(--contrast-bg) !important;
+  color: var(--contrast-text) !important;
+  filter: none !important;
 }
 
-/* === Canvas dunes === */
+/* === Dunes Canvas === */
 #duneCanvas {
   position: fixed;
   top: 0;
@@ -95,11 +98,14 @@ main {
   border: 2px solid var(--accent);
   border-radius: 8px;
   animation: fadeIn 0.6s ease-out;
+  /* new sizing */
+  width: 90vw;
+  max-width: 1200px;
 }
-#mainChart {
-  max-width: 800px;       /* ← taille accrue */
-  width: 100%;
-  height: auto;
+#chartContainer canvas {
+  /* override Chart.js sizing */
+  width: 100% !important;
+  height: auto !important;
   display: block;
   margin: 0 auto;
 }
@@ -129,15 +135,19 @@ main {
 }
 
 /* === Fullscreen Behavior === */
-/* When chartContainer is fullscreen, expand mainChart to fill */
-#chartContainer:fullscreen #mainChart,
-#chartContainer:-webkit-full-screen #mainChart {
-  max-width: none;
+/* when container is fullscreen, expand canvas */
+#chartContainer:fullscreen,
+#chartContainer:-webkit-full-screen {
   width: 100vw;
   height: 100vh;
 }
+#chartContainer:fullscreen canvas,
+#chartContainer:-webkit-full-screen canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
 
-/* === Controls (positioned in top-right) === */
+/* === Controls (top-right) === */
 .chart-controls {
   position: absolute;
   top: 10px;
@@ -146,45 +156,38 @@ main {
   gap: 0.5rem;
 }
 .chart-controls button {
-  background: transparent;
-  border: 2px solid var(--accent);
+  background: var(--accent);
+  border: none;
   border-radius: 4px;
-  color: var(--accent);
-  font-family: inherit;
+  width: 36px;
+  height: 36px;
   cursor: pointer;
-  width: 32px;
-  height: 32px;
-  padding: 0;
   position: relative;
-  transition: background 0.2s, color 0.2s;
+  font-size: 1.2rem;
+  color: var(--dark);
+  transition: background 0.2s;
 }
 .chart-controls button:hover {
-  background: var(--accent);
-  color: var(--dark);
+  background: var(--text);
+  color: var(--accent);
 }
 
-/* Fullscreen button: just arrows */
-#fullscreenBtn::after {
+/* fullscreen icon */
+#fullscreenBtn::before {
   content: '⤢';
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
 }
-#fullscreenBtn {
-  text-indent: -9999px; /* hide any text */
-}
 
-/* Contrast button: styled icon */
+/* contrast icon */
 #contrastBtn::before {
   content: '⚡';
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-}
-#contrastBtn {
-  text-indent: -9999px;
 }
 
 /* === Footer === */
