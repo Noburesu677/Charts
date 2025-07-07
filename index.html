@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AnomicValue Charts</title>
 
   <!-- Police rétro -->
@@ -14,17 +14,16 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- Ton CSS versionné pour forcer le refresh -->
-  <link rel="stylesheet" href="assets/style.css?v=5" />
+  <!-- CSS étoilé (versionné pour forcer le cache-bust) -->
+  <link rel="stylesheet" href="assets/style.css?v=2" />
 </head>
 <body>
-  <!-- Canvas pour l’animation des dunes -->
+  <!-- Fond animé étoiles -->
   <canvas id="duneCanvas"></canvas>
 
-  <!-- En-tête fixe -->
+  <!-- En-tête -->
   <header class="fade-in-down">
     <div class="logo">
-      <img src="assets/logo.png" alt="AnomicValue" />
       <h1>AnomicValue Charts</h1>
     </div>
     <nav>
@@ -36,7 +35,7 @@
     </nav>
   </header>
 
-  <!-- Conteneur principal du graphique -->
+  <!-- Graphiques -->
   <main>
     <div id="chartContainer" class="fade-in-up">
       <div id="loadingOverlay"><div class="spinner"></div></div>
@@ -54,7 +53,6 @@
     <p>© 2025 AnomicValue. All rights reserved.</p>
   </footer>
 
-  <!-- Script principal -->
   <script>
     const APP_SCRIPT_URL =
       'https://script.google.com/macros/s/AKfycbzyaaDiRnXsKyx5-CwD_XFzPoCswdJoU_yfNLdmvanYPrgrUg_CjLDs8KlIHOLevsiSTg/exec';
@@ -62,7 +60,7 @@
     const miniCtx = document.getElementById('miniChart').getContext('2d');
     let mainChart, miniChart;
 
-    // Animation dunes
+    // Animation étoiles
     const canvas = document.getElementById('duneCanvas'),
           ctx    = canvas.getContext('2d');
     let w, h, t = 0;
@@ -72,54 +70,41 @@
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
-    (function drawDunes(){
+    (function drawStars(){
       ctx.clearRect(0,0,w,h);
-      for(let i=0;i<3;i++){
-        const y = h*(0.6 + i*0.1),
-              amp = 20 + i*5,
-              speed = 0.5 + i*0.2;
-        ctx.fillStyle = `rgba(235,200,120,${0.2 + i*0.1})`;
+      for(let i=0;i<200;i++){
+        const x = Math.random()*w,
+              y = Math.random()*h,
+              r = Math.random()*1.2;
+        ctx.fillStyle = `rgba(255,255,255,${0.3+Math.random()*0.7})`;
         ctx.beginPath();
-        ctx.moveTo(0, y);
-        for(let x=0; x<=w; x+=20){
-          ctx.lineTo(x, y + Math.sin(x*0.02 + t*speed)*amp);
-        }
-        ctx.lineTo(w, h);
-        ctx.lineTo(0, h);
-        ctx.closePath();
+        ctx.arc((x + (t*0.5) % w), y, r, 0, 2*Math.PI);
         ctx.fill();
       }
-      t += 0.01;
-      requestAnimationFrame(drawDunes);
+      t += 1;
+      requestAnimationFrame(drawStars);
     })();
 
     async function fetchData(item) {
-      const res = await fetch(
-        `${APP_SCRIPT_URL}?name=${encodeURIComponent(item)}`
-      );
+      const res = await fetch(`${APP_SCRIPT_URL}?name=${encodeURIComponent(item)}`);
       if(!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      if(!Array.isArray(data) || data.length === 0)
-        throw new Error('No data');
+      if(!Array.isArray(data) || !data.length) throw new Error('No data');
       return data;
     }
 
     async function loadChart(mode) {
-      const item =
-        new URLSearchParams(location.search).get('item');
+      const item = new URLSearchParams(location.search).get('item');
       if(!item) throw new Error('Missing ?item');
       const raw = await fetchData(item);
       const grouped = {};
       raw.forEach(p => {
-        const d = new Date(p.t * 1000),
-              lbl = `${String(d.getDate()).padStart(2,'0')}/${
-                      String(d.getMonth()+1).padStart(2,'0')}`;
+        const d = new Date(p.t*1000),
+              lbl = `${d.getDate().toString().padStart(2,'0')}/${
+                      (d.getMonth()+1).toString().padStart(2,'0')}`;
         grouped[lbl] = p.v;
       });
-      return {
-        labels: Object.keys(grouped),
-        values: Object.values(grouped)
-      };
+      return { labels: Object.keys(grouped), values: Object.values(grouped) };
     }
 
     async function updateCharts(mode) {
@@ -127,7 +112,7 @@
       try {
         const { labels, values } = await loadChart(mode);
 
-        // Main Chart
+        // Main chart
         if(mainChart){
           mainChart.data.labels = labels;
           mainChart.data.datasets[0].data = values;
@@ -135,30 +120,21 @@
         } else {
           mainChart = new Chart(mainCtx, {
             type: 'line',
-            data: {
-              labels,
-              datasets: [{
-                label: 'Price',
-                data: values,
-                borderColor: 'red',
-                backgroundColor: 'transparent',
-                pointRadius: 5
-              }]
-            },
+            data: { labels, datasets: [{ label:'Price', data:values, borderColor:'#66ccff', backgroundColor:'transparent', pointRadius:4 }] },
             options: {
               responsive: true,
-              interaction: { mode: 'nearest', intersect: true },
-              plugins: { tooltip: { enabled: true, backgroundColor: '#000' } },
-              animation: { duration: 800 },
+              interaction: { mode:'nearest', intersect:true },
+              plugins: { tooltip:{ backgroundColor:'#000' } },
+              animation: { duration:600 },
               scales: {
-                x: { ticks: { color: '#fff' }, grid: { color: '#444' } },
-                y: { ticks: { color: '#fff' }, grid: { color: '#444' } }
+                x:{ ticks:{ color:'#eee' }, grid:{ color:'rgba(102,204,255,0.2)' } },
+                y:{ ticks:{ color:'#eee' }, grid:{ color:'rgba(102,204,255,0.2)' } }
               }
             }
           });
         }
 
-        // Mini Sparkline
+        // Mini sparkline
         if(miniChart){
           miniChart.data.labels = labels;
           miniChart.data.datasets[0].data = values;
@@ -166,21 +142,8 @@
         } else {
           miniChart = new Chart(miniCtx, {
             type: 'line',
-            data: {
-              labels,
-              datasets: [{
-                data: values,
-                borderColor: '#ff7700',
-                backgroundColor: 'transparent',
-                pointRadius: 0
-              }]
-            },
-            options: {
-              responsive: true,
-              animation: { duration: 500 },
-              plugins: { legend: { display: false } },
-              scales: { x: { display: false }, y: { display: false } }
-            }
+            data: { labels, datasets:[{ data:values, borderColor:'#66ccff', backgroundColor:'transparent', pointRadius:0 }] },
+            options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ x:{ display:false }, y:{ display:false } } }
           });
         }
       } catch(e){
@@ -190,29 +153,22 @@
       }
     }
 
-    // Onglets
-    document.querySelectorAll('nav a').forEach(a => {
-      a.addEventListener('click', e => {
+    document.querySelectorAll('nav a').forEach(a=>{
+      a.addEventListener('click',e=>{
         e.preventDefault();
-        document.querySelectorAll('nav a')
-          .forEach(n => n.classList.remove('active'));
+        document.querySelectorAll('nav a').forEach(n=>n.classList.remove('active'));
         a.classList.add('active');
         updateCharts(a.getAttribute('href').slice(1));
       });
     });
-    window.addEventListener('DOMContentLoaded', () => {
-      document.querySelector('nav a[href="#all"]').click();
-    });
+    window.addEventListener('DOMContentLoaded',()=> document.querySelector('nav a[href="#all"]').click());
 
-    // Fullscreen
-    document.getElementById('fullscreenBtn').addEventListener('click', () => {
+    document.getElementById('fullscreenBtn').addEventListener('click',()=>{
       const el = document.getElementById('chartContainer');
       if(document.fullscreenElement) document.exitFullscreen();
       else el.requestFullscreen();
     });
-
-    // High Contrast
-    document.getElementById('contrastBtn').addEventListener('click', () => {
+    document.getElementById('contrastBtn').addEventListener('click',()=>{
       document.body.classList.toggle('high-contrast');
     });
   </script>
