@@ -1,28 +1,28 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>AnomicValue Charts</title>
 
-  <!-- Police -->
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"/>
+  <!-- Roboto, pro -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+    rel="stylesheet"
+  />
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- CSS étoilé -->
-  <link rel="stylesheet" href="assets/style.css?v=4" />
+  <!-- Notre CSS -->
+  <link rel="stylesheet" href="assets/style.css?v=5"/>
 </head>
 <body>
-  <!-- Fond animé étoiles -->
+  <!-- Étoiles (optionnel : tu peux commenter si tu veux un fond totalement noir) -->
   <canvas id="starfield"></canvas>
 
-  <!-- En-tête -->
   <header class="fade-in-down">
-    <div class="logo">
-      <h1>AnomicValue Charts</h1>
-    </div>
+    <div class="logo"><h1>AnomicValue Charts</h1></div>
     <nav>
       <a href="#all" style="--i:0">All</a>
       <a href="#1d"  style="--i:1">1D</a>
@@ -32,7 +32,6 @@
     </nav>
   </header>
 
-  <!-- Conteneur des graphiques -->
   <main>
     <div id="chartContainer" class="fade-in-up">
       <div id="loadingOverlay"><div class="spinner"></div></div>
@@ -45,83 +44,85 @@
     </div>
   </main>
 
-  <!-- Pied de page -->
   <footer class="fade-in-up">
     <p>© 2025 AnomicValue. All rights reserved.</p>
   </footer>
 
   <script>
-    // starfield
-    const sf = document.getElementById('starfield'),
-          sctx = sf.getContext('2d');
-    let W, H;
-    function resizeSF(){
-      W = sf.width = window.innerWidth;
-      H = sf.height = window.innerHeight;
-    }
+    // Starfield (laisse tel quel ou commente si trop distrayant)
+    const sf = document.getElementById('starfield'), sctx = sf.getContext('2d');
+    let W,H;
+    function resizeSF(){ W=sf.width=innerWidth; H=sf.height=innerHeight; }
     window.addEventListener('resize', resizeSF);
     resizeSF();
-    const stars = Array.from({length:300}, () => ({
-      x: Math.random()*W, y: Math.random()*H,
-      r: 0.5+Math.random()*1.5,
-      a: 0.3+Math.random()*0.7,
-      dx: (Math.random()-0.5)*0.1,
-      dy: (Math.random()-0.5)*0.1
+    const stars=Array.from({length:200}, ()=>({
+      x:Math.random()*W,y:Math.random()*H,
+      r:Math.random()*1.2, a:0.3+Math.random()*0.7,
+      dx:(Math.random()-0.5)*0.1, dy:(Math.random()-0.5)*0.1
     }));
     function drawSF(){
       sctx.clearRect(0,0,W,H);
       stars.forEach(s=>{
-        s.x = (s.x + s.dx + W)%W;
-        s.y = (s.y + s.dy + H)%H;
+        s.x=(s.x+s.dx+W)%W; s.y=(s.y+s.dy+H)%H;
         sctx.beginPath();
-        sctx.arc(s.x, s.y, s.r, 0, 2*Math.PI);
-        sctx.fillStyle = `rgba(255,255,255,${s.a})`;
+        sctx.arc(s.x,s.y,s.r,0,2*Math.PI);
+        sctx.fillStyle=`rgba(255,255,255,${s.a})`;
         sctx.fill();
       });
       requestAnimationFrame(drawSF);
     }
     drawSF();
 
-    // Chart logic
-    const URL = 'https://script.google.com/macros/s/AKfycbzyaaDiRnXsKyx5-CwD_XFzPoCswdJoU_yfNLdmvanYPrgrUg_CjLDs8KlIHOLevsiSTg/exec';
-    const mainCtx = document.getElementById('mainChart').getContext('2d'),
-          miniCtx = document.getElementById('miniChart').getContext('2d');
+    // Charts
+    const URL='https://script.google.com/macros/s/AKfycbzyaaDiRnXsKyx5-CwD_XFzPoCswdJoU_yfNLdmvanYPrgrUg_CjLDs8KlIHOLevsiSTg/exec';
+    const mc=document.getElementById('mainChart').getContext('2d'),
+          sc=document.getElementById('miniChart').getContext('2d');
     let mainChart, miniChart;
 
     async function fetchData(item){
-      const r = await fetch(`${URL}?name=${encodeURIComponent(item)}`);
+      const r=await fetch(`${URL}?name=${encodeURIComponent(item)}`);
       if(!r.ok) throw `HTTP ${r.status}`;
-      const d = await r.json();
+      const d=await r.json();
       if(!Array.isArray(d)||!d.length) throw 'No data';
       return d;
     }
     async function loadChart(mode){
-      const item = new URLSearchParams(location.search).get('item');
+      const item=new URLSearchParams(location.search).get('item');
       if(!item) throw 'Missing ?item';
-      const raw = await fetchData(item), grouped = {};
+      const raw=await fetchData(item), g={};
       raw.forEach(p=>{
-        const dt = new Date(p.t*1e3),
-              lbl = `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}`;
-        grouped[lbl] = p.v;
+        const dt=new Date(p.t*1000),
+              lbl=`${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}`;
+        g[lbl]=p.v;
       });
-      return {labels:Object.keys(grouped), values:Object.values(grouped)};
+      return {labels:Object.keys(g), values:Object.values(g)};
     }
     async function updateCharts(mode){
       document.getElementById('loadingOverlay').style.display='flex';
       try{
-        const {labels,values} = await loadChart(mode);
+        const {labels,values}=await loadChart(mode);
         if(mainChart){
           mainChart.data.labels=labels;
           mainChart.data.datasets[0].data=values;
           mainChart.update();
         } else {
-          mainChart = new Chart(mainCtx,{
+          mainChart=new Chart(mc,{
             type:'line',
-            data:{labels,datasets:[{label:'Price',data:values,borderColor:'#66ccff',backgroundColor:'transparent',pointRadius:4}]},
+            data:{labels,datasets:[{
+              label:'Price',
+              data:values,
+              borderColor:'#66ccff',
+              backgroundColor:'transparent',
+              pointRadius:4
+            }]},
             options:{
-              responsive:true,interaction:{mode:'nearest',intersect:true},
+              responsive:true,
+              interaction:{mode:'nearest',intersect:true},
               plugins:{tooltip:{backgroundColor:'#000'}},
-              scales:{x:{ticks:{color:'#eee'},grid:{color:'rgba(102,204,255,0.2)'}},y:{ticks:{color:'#eee'},grid:{color:'rgba(102,204,255,0.2)'}}}
+              scales:{
+                x:{ticks:{color:'#eee'},grid:{color:'rgba(102,204,255,0.2)'}},
+                y:{ticks:{color:'#eee'},grid:{color:'rgba(102,204,255,0.2)'}}
+              }
             }
           });
         }
@@ -130,14 +131,19 @@
           miniChart.data.datasets[0].data=values;
           miniChart.update();
         } else {
-          miniChart = new Chart(miniCtx,{
+          miniChart=new Chart(sc,{
             type:'line',
-            data:{labels,datasets:[{data:values,borderColor:'#66ccff',backgroundColor:'transparent',pointRadius:0}]},
+            data:{labels,datasets:[{
+              data:values,
+              borderColor:'#66ccff',
+              backgroundColor:'transparent',
+              pointRadius:0
+            }]},
             options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}}}
           });
         }
-      }catch(e){ console.error(e) }
-      finally{ document.getElementById('loadingOverlay').style.display='none' }
+      }catch(e){console.error(e)}
+      finally{document.getElementById('loadingOverlay').style.display='none'}
     }
 
     document.querySelectorAll('nav a').forEach(a=>{
