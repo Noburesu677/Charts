@@ -130,16 +130,21 @@ main {
   animation: spin 1s linear infinite;
 }
 
-/* === Fullscreen Behavior === */
+/* === Fullscreen Behavior & Centering === */
 #chartContainer:fullscreen,
 #chartContainer:-webkit-full-screen {
-  width: 100vw;
-  height: 100vh;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100vw !important;
+  height: 100vh !important;
 }
-#chartContainer:fullscreen canvas,
-#chartContainer:-webkit-full-screen canvas {
-  width: 100% !important;
-  height: 100% !important;
+#chartContainer:fullscreen canvas#mainChart,
+#chartContainer:-webkit-full-screen canvas#mainChart {
+  width: 90vw !important;
+  max-width: 1200px !important;
+  height: auto !important;
 }
 
 /* === Controls === */
