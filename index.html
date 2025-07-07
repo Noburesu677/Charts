@@ -2,26 +2,23 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>AnomicValue Charts</title>
 
-  <!-- Police rétro -->
-  <link
-    href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
-    rel="stylesheet"
-  />
+  <!-- Police -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"/>
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- CSS étoilé (versionné pour forcer le cache-bust) -->
-  <link rel="stylesheet" href="assets/style.css?v=2" />
+  <!-- Notre CSS étoilé -->
+  <link rel="stylesheet" href="assets/style.css?v=3" />
 </head>
 <body>
-  <!-- Fond animé étoiles -->
-  <canvas id="duneCanvas"></canvas>
+  <!-- CANVAS pour l’étoilé -->
+  <canvas id="starfield"></canvas>
 
-  <!-- En-tête -->
+  <!-- HEADER -->
   <header class="fade-in-down">
     <div class="logo">
       <h1>AnomicValue Charts</h1>
@@ -35,7 +32,7 @@
     </nav>
   </header>
 
-  <!-- Graphiques -->
+  <!-- MAIN -->
   <main>
     <div id="chartContainer" class="fade-in-up">
       <div id="loadingOverlay"><div class="spinner"></div></div>
@@ -48,111 +45,135 @@
     </div>
   </main>
 
-  <!-- Pied de page -->
+  <!-- FOOTER -->
   <footer class="fade-in-up">
     <p>© 2025 AnomicValue. All rights reserved.</p>
   </footer>
 
   <script>
-    const APP_SCRIPT_URL =
+    // === STARFIELD ANIMÉ ===
+    const sfCanvas = document.getElementById('starfield'),
+          sfCtx    = sfCanvas.getContext('2d');
+    let W, H;
+    function resizeSF(){
+      W = sfCanvas.width = window.innerWidth;
+      H = sfCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeSF);
+    resizeSF();
+
+    // crée N étoiles réparties au hasard
+    const stars = Array.from({length:300}, () => ({
+      x: Math.random()*W,
+      y: Math.random()*H,
+      r: 0.5+Math.random()*1.5,
+      alpha: 0.3+Math.random()*0.7,
+      dx: (Math.random()-0.5)*0.1,
+      dy: (Math.random()-0.5)*0.1
+    }));
+
+    function drawStars(){
+      sfCtx.clearRect(0,0,W,H);
+      stars.forEach(s => {
+        s.x += s.dx; s.y += s.dy;
+        if(s.x<0) s.x=W; if(s.x>W) s.x=0;
+        if(s.y<0) s.y=H; if(s.y>H) s.y=0;
+        sfCtx.beginPath();
+        sfCtx.arc(s.x, s.y, s.r, 0, 2*Math.PI);
+        sfCtx.fillStyle = `rgba(255,255,255,${s.alpha})`;
+        sfCtx.fill();
+      });
+      requestAnimationFrame(drawStars);
+    }
+    drawStars();
+
+    // === CHART.JS & LOGIQUE ===
+    const APP_SCRIPT_URL = 
       'https://script.google.com/macros/s/AKfycbzyaaDiRnXsKyx5-CwD_XFzPoCswdJoU_yfNLdmvanYPrgrUg_CjLDs8KlIHOLevsiSTg/exec';
-    const mainCtx = document.getElementById('mainChart').getContext('2d');
-    const miniCtx = document.getElementById('miniChart').getContext('2d');
+    const mainCtx = document.getElementById('mainChart').getContext('2d'),
+          miniCtx = document.getElementById('miniChart').getContext('2d');
     let mainChart, miniChart;
 
-    // Animation étoiles
-    const canvas = document.getElementById('duneCanvas'),
-          ctx    = canvas.getContext('2d');
-    let w, h, t = 0;
-    function resizeCanvas() {
-      w = canvas.width = window.innerWidth;
-      h = canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-    (function drawStars(){
-      ctx.clearRect(0,0,w,h);
-      for(let i=0;i<200;i++){
-        const x = Math.random()*w,
-              y = Math.random()*h,
-              r = Math.random()*1.2;
-        ctx.fillStyle = `rgba(255,255,255,${0.3+Math.random()*0.7})`;
-        ctx.beginPath();
-        ctx.arc((x + (t*0.5) % w), y, r, 0, 2*Math.PI);
-        ctx.fill();
-      }
-      t += 1;
-      requestAnimationFrame(drawStars);
-    })();
-
-    async function fetchData(item) {
+    async function fetchData(item){
       const res = await fetch(`${APP_SCRIPT_URL}?name=${encodeURIComponent(item)}`);
       if(!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      if(!Array.isArray(data) || !data.length) throw new Error('No data');
-      return data;
+      const d = await res.json();
+      if(!Array.isArray(d)||d.length===0) throw 'No data';
+      return d;
     }
 
-    async function loadChart(mode) {
+    async function loadChart(mode){
       const item = new URLSearchParams(location.search).get('item');
-      if(!item) throw new Error('Missing ?item');
-      const raw = await fetchData(item);
-      const grouped = {};
+      if(!item) throw 'Missing ?item';
+      const raw = await fetchData(item),
+            grouped = {};
       raw.forEach(p => {
-        const d = new Date(p.t*1000),
-              lbl = `${d.getDate().toString().padStart(2,'0')}/${
-                      (d.getMonth()+1).toString().padStart(2,'0')}`;
+        const dt = new Date(p.t*1000),
+              lbl = `${dt.getDate().toString().padStart(2,'0')}/${
+                    (dt.getMonth()+1).toString().padStart(2,'0')}`;
         grouped[lbl] = p.v;
       });
-      return { labels: Object.keys(grouped), values: Object.values(grouped) };
+      return { labels:Object.keys(grouped), values:Object.values(grouped) };
     }
 
-    async function updateCharts(mode) {
-      document.getElementById('loadingOverlay').style.display = 'flex';
-      try {
-        const { labels, values } = await loadChart(mode);
-
-        // Main chart
+    async function updateCharts(mode){
+      document.getElementById('loadingOverlay').style.display='flex';
+      try{
+        const {labels,values} = await loadChart(mode);
         if(mainChart){
-          mainChart.data.labels = labels;
-          mainChart.data.datasets[0].data = values;
+          mainChart.data.labels=labels;
+          mainChart.data.datasets[0].data=values;
           mainChart.update();
         } else {
-          mainChart = new Chart(mainCtx, {
-            type: 'line',
-            data: { labels, datasets: [{ label:'Price', data:values, borderColor:'#66ccff', backgroundColor:'transparent', pointRadius:4 }] },
-            options: {
-              responsive: true,
-              interaction: { mode:'nearest', intersect:true },
-              plugins: { tooltip:{ backgroundColor:'#000' } },
-              animation: { duration:600 },
-              scales: {
-                x:{ ticks:{ color:'#eee' }, grid:{ color:'rgba(102,204,255,0.2)' } },
-                y:{ ticks:{ color:'#eee' }, grid:{ color:'rgba(102,204,255,0.2)' } }
+          mainChart = new Chart(mainCtx,{
+            type:'line',
+            data:{labels,datasets:[{
+              label:'Price',
+              data:values,
+              borderColor:'#66ccff',
+              backgroundColor:'transparent',
+              pointRadius:4
+            }]},
+            options:{
+              responsive:true,
+              interaction:{mode:'nearest',intersect:true},
+              plugins:{tooltip:{backgroundColor:'#000'}},
+              animation:{duration:600},
+              scales:{
+                x:{ticks:{color:'#eee'},grid:{color:'rgba(102,204,255,0.2)'}},
+                y:{ticks:{color:'#eee'},grid:{color:'rgba(102,204,255,0.2)'}}
               }
             }
           });
         }
-
-        // Mini sparkline
         if(miniChart){
-          miniChart.data.labels = labels;
-          miniChart.data.datasets[0].data = values;
+          miniChart.data.labels=labels;
+          miniChart.data.datasets[0].data=values;
           miniChart.update();
         } else {
-          miniChart = new Chart(miniCtx, {
-            type: 'line',
-            data: { labels, datasets:[{ data:values, borderColor:'#66ccff', backgroundColor:'transparent', pointRadius:0 }] },
-            options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ x:{ display:false }, y:{ display:false } } }
+          miniChart = new Chart(miniCtx,{
+            type:'line',
+            data:{labels,datasets:[{
+              data:values,
+              borderColor:'#66ccff',
+              backgroundColor:'transparent',
+              pointRadius:0
+            }]},
+            options:{
+              responsive:true,
+              plugins:{legend:{display:false}},
+              scales:{x:{display:false},y:{display:false}}
+            }
           });
         }
-      } catch(e){
+      }catch(e){
         console.error(e);
-      } finally {
-        document.getElementById('loadingOverlay').style.display = 'none';
+      }finally{
+        document.getElementById('loadingOverlay').style.display='none';
       }
     }
 
+    // handlers onglets
     document.querySelectorAll('nav a').forEach(a=>{
       a.addEventListener('click',e=>{
         e.preventDefault();
@@ -161,12 +182,14 @@
         updateCharts(a.getAttribute('href').slice(1));
       });
     });
-    window.addEventListener('DOMContentLoaded',()=> document.querySelector('nav a[href="#all"]').click());
+    window.addEventListener('DOMContentLoaded',()=>{
+      document.querySelector('nav a[href="#all"]').click();
+    });
 
+    // plein écran & contraste
     document.getElementById('fullscreenBtn').addEventListener('click',()=>{
-      const el = document.getElementById('chartContainer');
-      if(document.fullscreenElement) document.exitFullscreen();
-      else el.requestFullscreen();
+      const el=document.getElementById('chartContainer');
+      document.fullscreenElement?document.exitFullscreen():el.requestFullscreen();
     });
     document.getElementById('contrastBtn').addEventListener('click',()=>{
       document.body.classList.toggle('high-contrast');
