@@ -97,7 +97,7 @@ main {
   animation: fadeIn 0.6s ease-out;
 }
 #mainChart {
-  max-width: 600px;
+  max-width: 800px;       /* ← taille accrue */
   width: 100%;
   height: auto;
   display: block;
@@ -128,21 +128,63 @@ main {
   animation: spin 1s linear infinite;
 }
 
-/* === Controls === */
+/* === Fullscreen Behavior === */
+/* When chartContainer is fullscreen, expand mainChart to fill */
+#chartContainer:fullscreen #mainChart,
+#chartContainer:-webkit-full-screen #mainChart {
+  max-width: none;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* === Controls (positioned in top-right) === */
 .chart-controls {
-  margin: 0.5rem 0;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 0.5rem;
 }
 .chart-controls button {
-  background: var(--accent);
-  border: none;
-  padding: 0.5rem 1rem;
-  margin: 0 0.3rem;
-  cursor: pointer;
+  background: transparent;
+  border: 2px solid var(--accent);
+  border-radius: 4px;
+  color: var(--accent);
   font-family: inherit;
-  transition: background 0.2s;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  position: relative;
+  transition: background 0.2s, color 0.2s;
 }
 .chart-controls button:hover {
-  background: #ffbb33;
+  background: var(--accent);
+  color: var(--dark);
+}
+
+/* Fullscreen button: just arrows */
+#fullscreenBtn::after {
+  content: '⤢';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+#fullscreenBtn {
+  text-indent: -9999px; /* hide any text */
+}
+
+/* Contrast button: styled icon */
+#contrastBtn::before {
+  content: '⚡';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+#contrastBtn {
+  text-indent: -9999px;
 }
 
 /* === Footer === */
