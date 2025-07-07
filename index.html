@@ -1,3 +1,4 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -5,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>AnomicValue Charts</title>
 
-  <!-- Roboto, pro -->
+  <!-- Roboto, plus pro -->
   <link
     href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
     rel="stylesheet"
@@ -14,15 +15,18 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- Notre CSS -->
-  <link rel="stylesheet" href="assets/style.css?v=5"/>
+  <!-- CSS principal (cache-bust) -->
+  <link rel="stylesheet" href="assets/style.css?v=6"/>
 </head>
 <body>
-  <!-- Étoiles (optionnel : tu peux commenter si tu veux un fond totalement noir) -->
+  <!-- Fond étoilé (optionnel) -->
   <canvas id="starfield"></canvas>
 
+  <!-- HEADER -->
   <header class="fade-in-down">
-    <div class="logo"><h1>AnomicValue Charts</h1></div>
+    <div class="logo">
+      <h1 class="logo-text">AnomicValue</h1>
+    </div>
     <nav>
       <a href="#all" style="--i:0">All</a>
       <a href="#1d"  style="--i:1">1D</a>
@@ -32,6 +36,7 @@
     </nav>
   </header>
 
+  <!-- MAIN -->
   <main>
     <div id="chartContainer" class="fade-in-up">
       <div id="loadingOverlay"><div class="spinner"></div></div>
@@ -44,123 +49,172 @@
     </div>
   </main>
 
+  <!-- FOOTER -->
   <footer class="fade-in-up">
     <p>© 2025 AnomicValue. All rights reserved.</p>
   </footer>
 
   <script>
-    // Starfield (laisse tel quel ou commente si trop distrayant)
-    const sf = document.getElementById('starfield'), sctx = sf.getContext('2d');
-    let W,H;
-    function resizeSF(){ W=sf.width=innerWidth; H=sf.height=innerHeight; }
+    // — STARFIELD ANIMÉ —
+    const sf = document.getElementById('starfield'),
+          sctx = sf.getContext('2d');
+    let W, H;
+    function resizeSF(){
+      W = sf.width = innerWidth;
+      H = sf.height = innerHeight;
+    }
     window.addEventListener('resize', resizeSF);
     resizeSF();
-    const stars=Array.from({length:200}, ()=>({
-      x:Math.random()*W,y:Math.random()*H,
-      r:Math.random()*1.2, a:0.3+Math.random()*0.7,
-      dx:(Math.random()-0.5)*0.1, dy:(Math.random()-0.5)*0.1
+    const stars = Array.from({length:200}, ()=>({
+      x: Math.random()*W, y: Math.random()*H,
+      r: 0.5 + Math.random()*1.0,
+      a: 0.3 + Math.random()*0.7,
+      dx: (Math.random()-0.5)*0.2,
+      dy: (Math.random()-0.5)*0.2
     }));
-    function drawSF(){
+    (function drawSF(){
       sctx.clearRect(0,0,W,H);
-      stars.forEach(s=>{
-        s.x=(s.x+s.dx+W)%W; s.y=(s.y+s.dy+H)%H;
+      for(const s of stars){
+        s.x = (s.x + s.dx + W)%W;
+        s.y = (s.y + s.dy + H)%H;
         sctx.beginPath();
-        sctx.arc(s.x,s.y,s.r,0,2*Math.PI);
-        sctx.fillStyle=`rgba(255,255,255,${s.a})`;
+        sctx.arc(s.x, s.y, s.r, 0, 2*Math.PI);
+        sctx.fillStyle = `rgba(255,255,255,${s.a})`;
         sctx.fill();
-      });
+      }
       requestAnimationFrame(drawSF);
-    }
-    drawSF();
+    })();
 
-    // Charts
-    const URL='https://script.google.com/macros/s/AKfycbzyaaDiRnXsKyx5-CwD_XFzPoCswdJoU_yfNLdmvanYPrgrUg_CjLDs8KlIHOLevsiSTg/exec';
-    const mc=document.getElementById('mainChart').getContext('2d'),
-          sc=document.getElementById('miniChart').getContext('2d');
+    // — CHART.JS & LOGIQUE —
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzyaaDiRnXsKyx5-CwD_XFzPoCswdJoU_yfNLdmvanYPrgrUg_CjLDs8KlIHOLevsiSTg/exec';
+    const mainCtx = document.getElementById('mainChart').getContext('2d'),
+          miniCtx = document.getElementById('miniChart').getContext('2d');
     let mainChart, miniChart;
 
     async function fetchData(item){
-      const r=await fetch(`${URL}?name=${encodeURIComponent(item)}`);
-      if(!r.ok) throw `HTTP ${r.status}`;
-      const d=await r.json();
-      if(!Array.isArray(d)||!d.length) throw 'No data';
-      return d;
+      const res = await fetch(`${API_URL}?name=${encodeURIComponent(item)}`);
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      const arr = await res.json();
+      if(!Array.isArray(arr) || arr.length===0) throw new Error('No data');
+      return arr;
     }
+
     async function loadChart(mode){
-      const item=new URLSearchParams(location.search).get('item');
-      if(!item) throw 'Missing ?item';
-      const raw=await fetchData(item), g={};
-      raw.forEach(p=>{
-        const dt=new Date(p.t*1000),
-              lbl=`${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}`;
-        g[lbl]=p.v;
-      });
-      return {labels:Object.keys(g), values:Object.values(g)};
+      const item = new URLSearchParams(location.search).get('item');
+      if(!item) throw new Error('Missing ?item');
+      const raw = await fetchData(item), grouped = {};
+      for(const p of raw){
+        const d = new Date(p.t*1000),
+              lbl = String(d.getDate()).padStart(2,'0') + '/' +
+                    String(d.getMonth()+1).padStart(2,'0');
+        grouped[lbl] = p.v;
+      }
+      return { labels: Object.keys(grouped), values: Object.values(grouped) };
     }
+
     async function updateCharts(mode){
-      document.getElementById('loadingOverlay').style.display='flex';
-      try{
-        const {labels,values}=await loadChart(mode);
+      document.getElementById('loadingOverlay').style.display = 'flex';
+      try {
+        const { labels, values } = await loadChart(mode);
+
+        // Main chart
         if(mainChart){
-          mainChart.data.labels=labels;
-          mainChart.data.datasets[0].data=values;
+          mainChart.data.labels = labels;
+          mainChart.data.datasets[0].data = values;
           mainChart.update();
         } else {
-          mainChart=new Chart(mc,{
-            type:'line',
-            data:{labels,datasets:[{
-              label:'Price',
-              data:values,
-              borderColor:'#66ccff',
-              backgroundColor:'transparent',
-              pointRadius:4
-            }]},
-            options:{
-              responsive:true,
-              interaction:{mode:'nearest',intersect:true},
-              plugins:{tooltip:{backgroundColor:'#000'}},
-              scales:{
-                x:{ticks:{color:'#eee'},grid:{color:'rgba(102,204,255,0.2)'}},
-                y:{ticks:{color:'#eee'},grid:{color:'rgba(102,204,255,0.2)'}}
+          mainChart = new Chart(mainCtx, {
+            type: 'line',
+            data: {
+              labels,
+              datasets: [{
+                label: 'Price',
+                data: values,
+                borderColor: '#66ccff',
+                borderWidth: 3,
+                backgroundColor: 'rgba(102,204,255,0.2)',
+                tension: 0.3,
+                pointRadius: 4,
+                pointBackgroundColor: '#66ccff',
+                pointBorderColor: '#ffffff',
+                pointHoverRadius: 6
+              }]
+            },
+            options: {
+              responsive: true,
+              interaction: { mode: 'nearest', intersect: true },
+              plugins: {
+                tooltip: { backgroundColor: '#000', titleColor: '#fff', bodyColor: '#fff' }
+              },
+              scales: {
+                x: {
+                  ticks: { color: '#eee' },
+                  grid: { color: 'rgba(102,204,255,0.1)' }
+                },
+                y: {
+                  ticks: {
+                    color: '#eee',
+                    callback: val => val.toLocaleString()
+                  },
+                  grid: { color: 'rgba(102,204,255,0.1)' }
+                }
               }
             }
           });
         }
+
+        // Mini sparkline
         if(miniChart){
-          miniChart.data.labels=labels;
-          miniChart.data.datasets[0].data=values;
+          miniChart.data.labels = labels;
+          miniChart.data.datasets[0].data = values;
           miniChart.update();
         } else {
-          miniChart=new Chart(sc,{
-            type:'line',
-            data:{labels,datasets:[{
-              data:values,
-              borderColor:'#66ccff',
-              backgroundColor:'transparent',
-              pointRadius:0
-            }]},
-            options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}}}
+          miniChart = new Chart(miniCtx, {
+            type: 'line',
+            data: {
+              labels,
+              datasets: [{
+                data: values,
+                borderColor: '#66ccff',
+                borderWidth: 2,
+                backgroundColor: 'transparent',
+                tension: 0.3,
+                pointRadius: 0
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: { legend: { display: false } },
+              scales: { x: { display: false }, y: { display: false } }
+            }
           });
         }
-      }catch(e){console.error(e)}
-      finally{document.getElementById('loadingOverlay').style.display='none'}
+
+      } catch(err) {
+        console.error(err);
+      } finally {
+        document.getElementById('loadingOverlay').style.display = 'none';
+      }
     }
 
-    document.querySelectorAll('nav a').forEach(a=>{
-      a.addEventListener('click',e=>{
+    document.querySelectorAll('nav a').forEach(a => {
+      a.addEventListener('click', e => {
         e.preventDefault();
-        document.querySelectorAll('nav a').forEach(n=>n.classList.remove('active'));
+        document.querySelectorAll('nav a').forEach(n => n.classList.remove('active'));
         a.classList.add('active');
         updateCharts(a.getAttribute('href').slice(1));
       });
     });
-    window.addEventListener('DOMContentLoaded',()=>document.querySelector('nav a[href="#all"]').click());
 
-    document.getElementById('fullscreenBtn').onclick=()=>{
-      const el=document.getElementById('chartContainer');
-      document.fullscreenElement?document.exitFullscreen():el.requestFullscreen();
+    window.addEventListener('DOMContentLoaded', () => {
+      document.querySelector('nav a[href="#all"]').click();
+    });
+
+    document.getElementById('fullscreenBtn').onclick = () => {
+      const el = document.getElementById('chartContainer');
+      document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen();
     };
-    document.getElementById('contrastBtn').onclick=()=>{
+    document.getElementById('contrastBtn').onclick = () => {
       document.body.classList.toggle('high-contrast');
     };
   </script>
