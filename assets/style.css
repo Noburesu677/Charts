@@ -83,11 +83,12 @@ main {
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;   /* ← on colle tout en haut */
-  align-items: center;
-  overflow: hidden;               /* masque les débordements */
+  justify-content: flex-start;   /* enfants collés en haut */
+  align-items: center;           /* centré horizontalement */
+  overflow: hidden;               /* masque tout débordement */
   background: rgba(0,0,0,0.5);
-  padding: 1rem;                  /* espacements uniformes */
+  /* en haut 1.5rem, latéral 1rem, bas 3rem pour plus de marge */
+  padding: 1.5rem 1rem 3rem;
   border: 2px solid var(--accent);
   border-radius: 8px;
   animation: fadeIn 0.6s ease-out;
@@ -97,16 +98,22 @@ main {
   margin: auto;                   /* centre horizontalement */
 }
 
-/* mini-sparkline et main-chart */
-#chartContainer canvas {
+/* mini-sparkline */
+#chartContainer canvas#miniChart {
   width: 100% !important;
-  margin: 0.5rem 0;
+  margin-bottom: 1rem;
   z-index: 1;
 }
-/* Contrainte de hauteur du mainChart */
+
+/* graphique principal */
 #chartContainer canvas#mainChart {
-  max-height: calc(80vh - 120px) !important; /* laisse de la place en bas */
+  width: 100% !important;
+  /* on retire environ 200px (mini+contrôles+padding) du 80vh */
+  max-height: calc(80vh - 200px) !important;
   height: auto !important;
+  /* on remonte légèrement pour qu’on voie la fin */
+  margin-top: -1rem;
+  z-index: 1;
 }
 
 /* === Loading Overlay === */
@@ -137,10 +144,7 @@ main {
 }
 #chartContainer:fullscreen canvas#mainChart,
 #chartContainer:-webkit-full-screen canvas#mainChart {
-  width:90vw !important;
-  max-width:1200px !important;
-  height:auto !important;
-  max-height:none !important;    /* suppression de la restriction en full */
+  max-height: none !important;    /* on lève la limite en plein écran */
 }
 
 /* === Controls === */
