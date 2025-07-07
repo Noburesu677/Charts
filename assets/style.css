@@ -1,0 +1,95 @@
+/* === Base reset & fonts === */
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Press Start 2P', monospace;
+  color: #ffeedd;
+  overflow-x: hidden;
+  position: relative;
+  min-height: 100vh;
+  background: #1a0a00; /* deep night desert */
+}
+
+/* === Canvas sits behind everything === */
+#duneCanvas {
+  position: fixed;
+  top:0; left:0;
+  z-index: -1;
+}
+
+/* === Header === */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background: rgba(0,0,0,0.6);
+  border-bottom: 2px solid #ff7700;
+}
+header .logo {
+  display: flex;
+  align-items: center;
+}
+header .logo img {
+  height: 48px;
+  margin-right: 10px;
+  filter: drop-shadow(0 0 5px #ff7700);
+}
+header .logo h1 {
+  font-size: 1.2rem;
+  color: #ffbb33;
+}
+nav a {
+  margin-left: 1rem;
+  text-decoration: none;
+  color: #ffd6a5;
+  position: relative;
+  transition: color 0.2s;
+}
+nav a:hover,
+nav a.active {
+  color: #ffffff;
+}
+nav a.active::after {
+  content: '';
+  position: absolute;
+  height: 2px;
+  width: 100%;
+  background: #ff7700;
+  bottom: -4px; left: 0;
+}
+
+/* === Main & Chart === */
+main {
+  padding: 2rem;
+  text-align: center;
+}
+#chartContainer {
+  display: inline-block;
+  background: rgba(0,0,0,0.5);
+  padding: 1rem;
+  border: 2px solid #ffaa00;
+  border-radius: 8px;
+  animation: fadeIn 0.5s ease-out;
+}
+#chartImg {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+/* === Footer === */
+footer {
+  position: absolute;
+  bottom:0; left:0; width:100%;
+  padding: 0.5rem;
+  text-align: center;
+  background: rgba(0,0,0,0.6);
+  font-size: 0.75rem;
+  color: #777;
+}
+
+/* === Animations === */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
