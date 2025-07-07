@@ -1,159 +1,93 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Historique AnomicValue</title>
-  <style>
-    * { box-sizing: border-box; margin:0; padding:0; }
-    html, body { height:100%; background:#141517; color:#DDD; font-family:sans-serif; }
-    #container { display:flex; flex-direction:column; height:100%; }
-    #controls {
-      display:flex; justify-content:center; gap:8px;
-      background:#1E1F22; padding:10px; border-bottom:1px solid #333;
-    }
-    #controls button {
-      background:#2A2C31; border:1px solid #444; border-radius:4px;
-      color:#BBB; padding:6px 12px; cursor:pointer; transition:0.2s;
-    }
-    #controls button.active { background:#5865F2; color:#fff; }
-    #controls button:hover { background:#3A3D44; color:#fff; }
-    #current-price {
-      text-align:center; padding:8px 0; font-size:1.1em; color:#1FB6FF;
-    }
-    #chart {
-      flex:1; display:flex; justify-content:center; align-items:center;
-      background:#1E1F22;
-    }
-    #chart img { max-width:100%; max-height:100%; }
-    footer {
-      text-align:right; font-size:0.75em;
-      padding:6px 12px; background:#1E1F22; border-top:1px solid #333;
-    }
-    footer a { color:#555; text-decoration:none; }
-    footer a:hover { color:#AAA; }
-  </style>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AnomicValue Charts</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
-  <div id="container">
-    <div id="controls">
-      <button data-range="0" class="active">All</button>
-      <button data-range="1">1d</button>
-      <button data-range="7">1w</button>
-      <button data-range="30">1m</button>
-      <button data-range="90">3m</button>
-      <button data-range="365">1y</button>
+  <!-- Floating dunes background -->
+  <canvas id="duneCanvas"></canvas>
+
+  <header>
+    <div class="logo">
+      <img src="assets/logo.png" alt="AnomicValue" />
+      <h1>AnomicValue Charts</h1>
     </div>
+    <nav>
+      <a href="#all">All</a>
+      <a href="#1d">1D</a>
+      <a href="#1w">1W</a>
+      <a href="#1m">1M</a>
+      <a href="#1y">1Y</a>
+    </nav>
+  </header>
 
-    <div id="current-price">Valeur actuelle : –</div>
-
-    <div id="chart">
-      <p style="color:#888;">Chargement…</p>
+  <main id="content">
+    <!-- Chart will be injected here by your existing JS -->
+    <div id="chartContainer">
+      <img id="chartImg" src="" alt="Price History Chart" />
     </div>
+  </main>
 
-    <footer>
-      <a href="https://discord.gg/jM2AQXtZ" target="_blank">Join AnomicValue Discord</a>
-    </footer>
-  </div>
+  <footer>
+    <p>© 2025 AnomicValue. All rights reserved.</p>
+  </footer>
 
   <script>
-    // URL de ton Apps Script déployé (remplace par la tienne)
-    const APP_URL = "https://script.google.com/macros/s/AKfycbyX-_XhaZi2M05lP3B67oIxsg9j8oTC0t7VvYHwALlKYCe96ceowiUiwiX6chRwzEwY0Q/exec";
-    const params  = new URLSearchParams(location.search);
-    const item    = params.get('item') || params.get('name');
-    if (!item) {
-      document.getElementById('chart').innerHTML =
-        '<p style="padding:20px;color:#EEE;text-align:center;">⚠️ Passe <code>?item=NomDeTonItem</code></p>';
-      throw '';
+    // Simple dune-sand wave animation
+    const canvas = document.getElementById('duneCanvas');
+    const ctx = canvas.getContext('2d');
+    let w, h, t = 0;
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
     }
+    window.addEventListener('resize', resize);
+    resize();
 
-    let HIST = [];
-    let currentRange = 0;
-
-    // Charge les données JSON de PriceHistory
-    async function loadData() {
-      try {
-        const res = await fetch(`${APP_URL}?name=${encodeURIComponent(item)}`);
-        const d   = await res.json();
-        if (d.error) {
-          document.getElementById('chart').innerHTML =
-            `<p style="padding:20px;color:#E66;text-align:center;">❌ ${d.error}</p>`;
-          return;
+    function drawDunes() {
+      ctx.clearRect(0, 0, w, h);
+      for (let i = 0; i < 3; i++) {
+        const y = h * (0.6 + i*0.1);
+        ctx.fillStyle = `rgba(235,200,120,${0.2 + i*0.1})`;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        for (let x = 0; x <= w; x += 20) {
+          const dy = Math.sin((x * 0.02) + t * (0.5 + i*0.2)) * 20;
+          ctx.lineTo(x, y + dy);
         }
-        HIST = d;
-        console.log("🚨 HIST raw data:", HIST);
-        // Affiche la valeur actuelle
-        const last = HIST[HIST.length - 1];
-        const cp = last ? last.v.toLocaleString() : "N/A";
-        document.getElementById('current-price').textContent = `Valeur actuelle : ${cp}`;
-        render(currentRange);
-      } catch (e) {
-        document.getElementById('chart').innerHTML =
-          '<p style="padding:20px;color:#E66;text-align:center;">Erreur réseau</p>';
+        ctx.lineTo(w, h);
+        ctx.lineTo(0, h);
+        ctx.closePath();
+        ctx.fill();
       }
+      t += 0.01;
+      requestAnimationFrame(drawDunes);
     }
+    drawDunes();
 
-    // Génère l'URL QuickChart selon la plage
-    function makeQC(days) {
-      // Filtre HIST selon days
-      const pts = days === 0
-        ? HIST
-        : HIST.filter(pt => pt.t * 1000 >= Date.now() - days * 24 * 3600 * 1000);
-
-      const labels = pts.map(pt => new Date(pt.t * 1000).toLocaleDateString());
-      const data   = pts.map(pt => pt.v);
-
-      // Construis la config JSON inline
-      const cfg = {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: item,
-            data: data,
-            borderColor: '#1FB6FF',
-            backgroundColor: 'rgba(31,182,255,0.2)',
-            pointRadius: 3,
-            tension: 0.2
-          }]
-        },
-        options: {
-          plugins: { legend: { labels: { color: '#EEE' } } },
-          scales: {
-            x: { ticks: { color: '#CCC' }, grid: { color: '#333' } },
-            y: { ticks: { color: '#CCC' }, grid: { color: '#333' } }
-          },
-          layout: { padding: 20 },
-          backgroundColor: '#141517'
-        }
-      };
-
-      // Encode et renvoie l'URL
-      const url = 'https://quickchart.io/chart?c='
-        + encodeURIComponent(JSON.stringify(cfg))
-        + '&width=800&height=400';
-      console.log("QuickChart URL:", url);
-      return url;
-    }
-
-    // Affiche l’image
-    function render(days) {
-      currentRange = days;
-      document.querySelectorAll('#controls button')
-        .forEach(b => b.classList.toggle('active', Number(b.dataset.range) === days));
-
-      const url = makeQC(days);
-      document.getElementById('chart').innerHTML =
-        `<img src="${url}" alt="Historique ${item}" />`;
-    }
-
-    // Gestion des boutons
-    document.getElementById('controls').addEventListener('click', e => {
-      if (e.target.tagName !== 'BUTTON') return;
-      render(Number(e.target.dataset.range));
+    // Tab switching for different timeframes
+    document.querySelectorAll('header nav a').forEach(a => {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        const mode = a.getAttribute('href').substring(1);
+        // Assuming you have a function loadChart(mode):
+        loadChart(mode).then(url => {
+          document.getElementById('chartImg').src = url;
+        });
+        // Highlight active
+        document.querySelectorAll('nav a').forEach(n=>n.classList.remove('active'));
+        a.classList.add('active');
+      });
     });
-
-    // Initialisation
-    loadData();
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      document.querySelector('header nav a[href="#all"]').click();
+    });
   </script>
 </body>
 </html>
