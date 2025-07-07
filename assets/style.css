@@ -18,21 +18,18 @@ body {
   color: var(--text);
   font-family: 'Press Start 2P', monospace;
   overflow-x: hidden;
-  position: relative;
   min-height: 100vh;
 }
 .high-contrast {
-  background: var(--contrast-bg) !important;
-  color: var(--contrast-text) !important;
-  filter: none !important;
+  background: var(--contrast-bg)!important;
+  color: var(--contrast-text)!important;
+  filter: none!important;
 }
 
 /* === Dunes Canvas === */
 #duneCanvas {
   position: fixed;
-  top: 0;
-  left: 0;
-  z-index: -1;
+  top: 0; left: 0; z-index: -1;
 }
 
 /* === Header === */
@@ -45,83 +42,74 @@ header {
   border-bottom: 3px solid var(--accent);
 }
 header .logo {
-  display: flex;
-  align-items: center;
+  display: flex; align-items: center;
 }
 header .logo img {
-  height: 48px;
-  margin-right: 10px;
+  height: 48px; margin-right: 10px;
   filter: drop-shadow(0 0 5px var(--accent));
 }
 header .logo h1 {
-  font-size: 1.2rem;
-  color: var(--accent);
+  font-size: 1.2rem; color: var(--accent);
 }
-/* nav links */
+/* Nav links */
 nav a {
   margin-left: 1rem;
-  position: relative;
-  text-decoration: none;
   color: var(--text);
+  text-decoration: none;
   opacity: 0;
   transform: translateX(20px);
   animation: navFade 0.5s ease forwards;
 }
-nav a:nth-child(1) { animation-delay: 0.1s; }
-nav a:nth-child(2) { animation-delay: 0.2s; }
-nav a:nth-child(3) { animation-delay: 0.3s; }
-nav a:nth-child(4) { animation-delay: 0.4s; }
-nav a:nth-child(5) { animation-delay: 0.5s; }
-nav a:hover,
-nav a.active {
-  color: #fff;
-}
+nav a:nth-child(1){ animation-delay:0.1s }
+nav a:nth-child(2){ animation-delay:0.2s }
+nav a:nth-child(3){ animation-delay:0.3s }
+nav a:nth-child(4){ animation-delay:0.4s }
+nav a:nth-child(5){ animation-delay:0.5s }
+nav a:hover, nav a.active { color: #fff }
 nav a.active::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: var(--accent);
+  content:''; position:absolute; bottom:-4px; left:0;
+  width:100%; height:2px; background:var(--accent);
 }
 
-/* === Main Chart Container === */
+/* === Main & centering === */
 main {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 2rem;
   text-align: center;
 }
+
+/* === Chart Container === */
 #chartContainer {
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;   /* éléments collés en haut */
   align-items: center;
   background: rgba(0, 0, 0, 0.5);
-  padding: 1rem;
+  padding: 2rem 1rem 1rem;        /* plus de marge en haut */
   border: 2px solid var(--accent);
   border-radius: 8px;
   animation: fadeIn 0.6s ease-out;
-  width: 90vw;
+  width: 75vw;                    /* largeur réduite pour meilleur centrage */
   max-width: 1200px;
   height: 80vh;
-  margin: 0 auto; /* ← centre horizontalement */
+  margin: auto;                   /* centre horizontalement */
 }
 #chartContainer canvas {
   width: 100% !important;
   height: auto !important;
-  display: block;
-  margin: 0.5rem 0;
+  margin: 1rem 0;                 /* espace autour des canvas */
   z-index: 1;
 }
+
+/* === Loading Overlay === */
 #loadingOverlay {
-  position: absolute;
-  top: 0; left: 0;
+  position: absolute; top: 0; left: 0;
   width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: rgba(0,0,0,0.7);
+  display: flex; justify-content:center; align-items:center;
   z-index: 2;
 }
 .spinner {
@@ -132,7 +120,7 @@ main {
   animation: spin 1s linear infinite;
 }
 
-/* === Fullscreen Behavior & Centering === */
+/* === Fullscreen Behavior & forced centering === */
 #chartContainer:fullscreen,
 #chartContainer:-webkit-full-screen {
   display: flex !important;
@@ -152,61 +140,46 @@ main {
 /* === Controls === */
 .chart-controls {
   position: absolute;
-  top: 10px;
-  left: 50%;
+  top: 10px; left: 50%;
   transform: translateX(-50%);
-  display: flex;
-  gap: 0.5rem;
+  display: flex; gap: 0.5rem;
   z-index: 3;
 }
 .chart-controls button {
   background: var(--accent);
-  border: none;
-  border-radius: 4px;
+  border: none; border-radius: 4px;
   width: 40px; height: 40px;
-  cursor: pointer;
-  position: relative;
-  transition: background 0.2s, color 0.2s;
+  cursor: pointer; position: relative;
+  transition: background .2s, color .2s;
 }
 .chart-controls button:hover {
   background: var(--text);
   color: var(--accent);
 }
 #fullscreenBtn::before {
-  content: '⤢';
-  font-size: 1.2rem;
-  position: absolute; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
+  content:'⤢'; font-size:1.2rem;
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%);
 }
 #contrastBtn::before {
-  content: '⚡';
-  font-size: 1.2rem;
-  position: absolute; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
+  content:'⚡'; font-size:1.2rem;
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%);
 }
 
 /* === Footer === */
 footer {
-  position: absolute;
-  bottom: 0; left: 0;
-  width: 100%;
-  padding: 0.5rem;
-  text-align: center;
-  background: rgba(0, 0, 0, 0.6);
-  font-size: 0.75rem;
-  color: #777;
+  position: absolute; bottom:0; left:0;
+  width:100%; padding:.5rem;
+  text-align:center;
+  background: rgba(0,0,0,0.6);
+  font-size:.75rem; color:#777;
 }
 
 /* === Animations === */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeInDown {
-  from { opacity: 0; transform: translateY(-20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.fade-in-down { animation: fadeInDown 0.6s ease-out; }
-.fade-in-up   { animation: fadeIn 0.6s ease-out; }
-@keyframes navFade { to { opacity: 1; transform: translateX(0); } }
-@keyframes spin    { to { transform: rotate(360deg); } }
+@keyframes fadeIn    { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeInDown{ from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+@keyframes navFade   { to{opacity:1;transform:translateX(0)} }
+@keyframes spin      { to{transform:rotate(360deg)} }
+.fade-in-down{animation:fadeInDown .6s ease-out}
+.fade-in-up  {animation:fadeIn .6s ease-out}
