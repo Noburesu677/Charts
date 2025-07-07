@@ -8,8 +8,10 @@
     href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="assets/style.css" />
+  <!-- Chart.js pour les graphiques -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Votre CSS versionné -->
+  <link rel="stylesheet" href="assets/style.css?v=3" />
 </head>
 <body>
   <canvas id="duneCanvas"></canvas>
@@ -34,7 +36,7 @@
       <canvas id="miniChart" width="200" height="50"></canvas>
       <div class="chart-controls">
         <button id="contrastBtn">High Contrast</button>
-        <button id="fullscreenBtn">⤢ Fullscreen</button>
+        <button id="fullscreenBtn">Fullscreen</button>
       </div>
       <canvas id="mainChart"></canvas>
     </div>
@@ -46,121 +48,150 @@
 
   <script>
     const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzyaaDiRnXsKyx5-CwD_XFzPoCswdJoU_yfNLdmvanYPrgrUg_CjLDs8KlIHOLevsiSTg/exec';
-    const GH_PAGES_BASE  = 'https://noburesu677.github.io/Charts';
     const mainCtx = document.getElementById('mainChart').getContext('2d');
     const miniCtx = document.getElementById('miniChart').getContext('2d');
     let mainChart, miniChart;
 
-    // dunes animation (inchangé)...
-    const canvas = document.getElementById('duneCanvas'), ctx = canvas.getContext('2d');
-    let w,h,t=0;
-    function resize(){ w=canvas.width=innerWidth; h=canvas.height=innerHeight; }
-    onresize=resize; resize();
-    (function draw(){
+    // Animation dunes
+    const canvas = document.getElementById('duneCanvas'),
+          ctx    = canvas.getContext('2d');
+    let w, h, t = 0;
+    function resizeCanvas() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    (function drawDunes(){
       ctx.clearRect(0,0,w,h);
       for(let i=0;i<3;i++){
-        const y=h*(0.6+i*0.1), amp=20+i*5, spd=0.5+i*0.2;
-        ctx.fillStyle=`rgba(235,200,120,${0.2+i*0.1})`;
+        const y = h*(0.6 + i*0.1),
+              amp = 20 + i*5,
+              speed = 0.5 + i*0.2;
+        ctx.fillStyle = `rgba(235,200,120,${0.2 + i*0.1})`;
         ctx.beginPath();
-        ctx.moveTo(0,y);
-        for(let x=0;x<=w;x+=20)
-          ctx.lineTo(x, y + Math.sin(x*0.02 + t*spd)*amp);
-        ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath(); ctx.fill();
+        ctx.moveTo(0, y);
+        for(let x=0; x<=w; x+=20){
+          ctx.lineTo(x, y + Math.sin(x*0.02 + t*speed)*amp);
+        }
+        ctx.lineTo(w, h);
+        ctx.lineTo(0, h);
+        ctx.closePath();
+        ctx.fill();
       }
-      t+=0.01; requestAnimationFrame(draw);
+      t += 0.01;
+      requestAnimationFrame(drawDunes);
     })();
 
-    async function loadChart(mode){
-      const item = new URLSearchParams(location.search).get('item');
-      if(!item) throw 'Missing ?item';
-      const r = await fetch(`${APP_SCRIPT_URL}?name=${encodeURIComponent(item)}`);
-      if(!r.ok) throw `HTTP ${r.status}`;
-      const data = await r.json();
-      if(!Array.isArray(data)||!data.length) throw 'No data';
-      const grouped = {};
-      data.forEach(p=>{
-        const d=new Date(p.t*1000),
-              lbl=`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
-        grouped[lbl]=p.v;
-      });
-      return {labels:Object.keys(grouped), values:Object.values(grouped)};
+    async function fetchData(item) {
+      const res = await fetch(`${APP_SCRIPT_URL}?name=${encodeURIComponent(item)}`);
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if(!Array.isArray(data) || data.length===0) throw new Error('No data');
+      return data;
     }
 
-    async function updateCharts(mode){
-      document.getElementById('loadingOverlay').style.display='flex';
-      try{
-        const {labels,values} = await loadChart(mode);
+    async function loadChart(mode) {
+      const item = new URLSearchParams(location.search).get('item');
+      if(!item) throw new Error('Missing ?item');
+      const raw = await fetchData(item);
+      const grouped = {};
+      raw.forEach(p=>{
+        const d = new Date(p.t*1000),
+              lbl = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+        grouped[lbl] = p.v;
+      });
+      return {
+        labels: Object.keys(grouped),
+        values: Object.values(grouped)
+      };
+    }
 
-        // Main chart
-        if(mainChart){
-          mainChart.data.labels=labels;
-          mainChart.data.datasets[0].data=values;
+    async function updateCharts(mode) {
+      document.getElementById('loadingOverlay').style.display = 'flex';
+      try {
+        const {labels, values} = await loadChart(mode);
+        // Main Chart
+        if(mainChart) {
+          mainChart.data.labels = labels;
+          mainChart.data.datasets[0].data = values;
           mainChart.update();
         } else {
           mainChart = new Chart(mainCtx, {
-            type:'line', data:{
-              labels, datasets:[{
-                label:'Price',
-                data:values,
-                borderColor:'red',
-                backgroundColor:'transparent',
-                pointRadius:5
+            type: 'line',
+            data: {
+              labels,
+              datasets: [{
+                label: 'Price',
+                data: values,
+                borderColor: 'red',
+                backgroundColor: 'transparent',
+                pointRadius: 5
               }]
             },
-            options:{
-              responsive:true,
-              interaction:{mode:'nearest', intersect:true},  // ← tooltip only on point
-              plugins:{tooltip:{enabled:true, backgroundColor:'#000'}},
-              animation:{duration:800},
-              scales:{
-                x:{ticks:{color:'#fff'}, grid:{color:'#444'}},
-                y:{ticks:{color:'#fff'}, grid:{color:'#444'}}
+            options: {
+              responsive: true,
+              interaction: { mode: 'nearest', intersect: true },
+              plugins: { tooltip: { enabled: true, backgroundColor: '#000' } },
+              animation: { duration: 800 },
+              scales: {
+                x: { ticks: { color: '#fff' }, grid: { color: '#444' } },
+                y: { ticks: { color: '#fff' }, grid: { color: '#444' } }
               }
             }
           });
         }
-
-        // Mini sparkline
-        if(miniChart){
-          miniChart.data.labels=labels;
-          miniChart.data.datasets[0].data=values;
+        // Mini Sparkline
+        if(miniChart) {
+          miniChart.data.labels = labels;
+          miniChart.data.datasets[0].data = values;
           miniChart.update();
         } else {
           miniChart = new Chart(miniCtx, {
-            type:'line', data:{
-              labels, datasets:[{
-                data:values,
-                borderColor:'#ff7700',
-                backgroundColor:'transparent',
-                pointRadius:0
-              }]
+            type: 'line',
+            data: {
+              labels,
+              datasets: [{ data: values, borderColor:'#ff7700', backgroundColor:'transparent', pointRadius:0 }]
             },
-            options:{responsive:true, animation:{duration:500}, plugins:{legend:{display:false}}, scales:{x:{display:false}, y:{display:false}}}
+            options: {
+              responsive: true,
+              animation: { duration: 500 },
+              plugins: { legend: { display: false } },
+              scales: { x:{ display:false }, y:{ display:false } }
+            }
           });
         }
-
-      }catch(e){
+      } catch (e) {
         console.error(e);
-      }finally{
-        document.getElementById('loadingOverlay').style.display='none';
+      } finally {
+        document.getElementById('loadingOverlay').style.display = 'none';
       }
     }
 
+    // Onglets
     document.querySelectorAll('nav a').forEach(a=>{
-      a.onclick=e=>{
+      a.addEventListener('click', e=>{
         e.preventDefault();
         document.querySelectorAll('nav a').forEach(n=>n.classList.remove('active'));
         a.classList.add('active');
-        updateCharts(a.getAttribute('href').slice(1));
-      };
+        updateCharts(a.getAttribute('href').substring(1));
+      });
     });
-    window.addEventListener('DOMContentLoaded',()=>document.querySelector('nav a[href="#all"]').click());
+    window.addEventListener('DOMContentLoaded', ()=>{
+      document.querySelector('nav a[href="#all"]').click();
+    });
 
-    document.getElementById('fullscreenBtn').onclick=()=>{
-      const el=document.getElementById('chartContainer');
-      document.fullscreenElement?document.exitFullscreen():el.requestFullscreen();
-    };
-    document.getElementById('contrastBtn').onclick=()=>document.body.classList.toggle('high-contrast');
+    // Fullscreen toggle
+    document.getElementById('fullscreenBtn').addEventListener('click', ()=>{
+      const el = document.getElementById('chartContainer');
+      if (document.fullscreenElement) document.exitFullscreen();
+      else el.requestFullscreen();
+    });
+
+    // High Contrast toggle
+    document.getElementById('contrastBtn').addEventListener('click', ()=>{
+      document.body.classList.toggle('high-contrast');
+    });
   </script>
 </body>
 </html>
