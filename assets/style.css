@@ -83,30 +83,29 @@ main {
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;   /* enfants en haut */
+  justify-content: flex-start;   /* ← on colle tout en haut */
   align-items: center;
-  overflow: hidden;               /* masque débordements */
+  overflow: hidden;               /* masque les débordements */
   background: rgba(0,0,0,0.5);
-  padding: 2rem 1rem 1rem;        /* plus d’espace en haut */
+  padding: 1rem;                  /* espacements uniformes */
   border: 2px solid var(--accent);
   border-radius: 8px;
   animation: fadeIn 0.6s ease-out;
-  width: 75vw;                    /* 75% de la largeur */
+  width: 75vw;
   max-width: 1200px;
-  height: 80vh;                   /* 80% de la hauteur viewport */
+  height: 80vh;
   margin: auto;                   /* centre horizontalement */
 }
 
 /* mini-sparkline et main-chart */
 #chartContainer canvas {
   width: 100% !important;
-  margin: 1rem 0;
+  margin: 0.5rem 0;
   z-index: 1;
 }
-/* Contrainte de hauteur du mainChart (évite le débordement) */
+/* Contrainte de hauteur du mainChart */
 #chartContainer canvas#mainChart {
-  /* calc(80vh - (hauteur mini-chart + paddings)) */
-  max-height: calc(80vh - 100px) !important;
+  max-height: calc(80vh - 120px) !important; /* laisse de la place en bas */
   height: auto !important;
 }
 
@@ -141,7 +140,7 @@ main {
   width:90vw !important;
   max-width:1200px !important;
   height:auto !important;
-  max-height: none !important;  /* désactive la restriction en full-screen */
+  max-height:none !important;    /* suppression de la restriction en full */
 }
 
 /* === Controls === */
