@@ -4,10 +4,7 @@
   <meta charset="UTF-8">
   <title>AnomicValue Charts</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <!-- Lien vers la feuille de styles CSS -->
   <link rel="stylesheet" href="style.css">
-
-  <!-- Chart.js UMD (v4.3.0) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -38,65 +35,48 @@
   <footer>© 2025 AnomicValue. All rights reserved.</footer>
 
   <script>
-  document.addEventListener("DOMContentLoaded", ()=> {
-    const APP_SCRIPT_URL = 
+  document.addEventListener("DOMContentLoaded", ()=>{
+    const APP_SCRIPT_URL =
       "https://script.google.com/macros/s/AKfycbzyaaDiRnXsKyx5-CwD_XFzPoCswdJoU_yfNLdmvanYPrgrUg_CjLDs8KlIHOLevsiSTg/exec";
-    const params  = new URLSearchParams(location.search);
-    const name    = params.get("name") || params.get("item");
-    const ctx     = document.getElementById("chart").getContext("2d");
+    const params = new URLSearchParams(location.search);
+    const name   = params.get("name") || params.get("item");
+    const ctx    = document.getElementById("chart").getContext("2d");
     let chart, rawData;
 
     if (!name) {
-      document.querySelector("main").innerHTML = 
-        `<p class="error">❌ Paramètre manquant : ajoutez <code>?name=NomDeItem</code></p>`;
+      document.querySelector("main").innerHTML =
+        `<p class="error">❌ Paramètre manquant : &nbsp;<code>?name=NomDeItem</code></p>`;
       return;
     }
 
-    function drawChart(rangeDays) {
-      let subset = rawData.slice();
-      if (rangeDays !== "all") {
-        const cutoff = Date.now()/1000 - rangeDays*24*3600;
-        subset = subset.filter(p => p.t >= cutoff);
+    function drawChart(range) {
+      let subset = rawData;
+      if (range !== "all") {
+        const cutoff = Date.now()/1000 - range*24*3600;
+        subset = rawData.filter(p=>p.t >= cutoff);
       }
       const labels = subset.map(p=>new Date(p.t*1000).toLocaleDateString());
       const values = subset.map(p=>p.v);
 
       const cfg = {
         type: "line",
-        data: {
-          labels,
-          datasets: [{
-            label: name,
-            data: values,
-            borderColor: "#00FFFF",
-            backgroundColor: "rgba(0,255,255,0.1)",
-            pointRadius: 4,
-            tension: 0.3
-          }]
-        },
+        data: { labels, datasets: [{
+          label: name,
+          data: values,
+          borderColor: "#0FF",
+          backgroundColor: "rgba(0,255,255,0.1)",
+          pointRadius: 3,
+          tension: 0.3
+        }]},
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: {
-              labels: {
-                color: "#00FFFF",
-                font: { size: 18 }
-              }
-            }
+            legend: { labels:{ color:"#0FF", font:{size:16} } }
           },
           scales: {
-            x: {
-              ticks: { color: "#EEE" },
-              grid: { color: "#333" }
-            },
-            y: {
-              ticks: { 
-                color: "#EEE",
-                callback: v => v.toLocaleString()
-              },
-              grid: { color: "#333" }
-            }
+            x:{ ticks:{ color:"#EEE" }, grid:{ color:"#333" } },
+            y:{ ticks:{ color:"#EEE", callback:v=>v.toLocaleString() }, grid:{ color:"#333" } }
           }
         }
       };
@@ -109,50 +89,39 @@
         chart = new Chart(ctx, cfg);
       }
 
-      document.querySelectorAll("#ranges a").forEach(a=>{
-        a.classList.toggle("active", a.dataset.range === rangeDays);
-      });
+      document.querySelectorAll("#ranges a").forEach(a=>
+        a.classList.toggle("active", a.dataset.range === range)
+      );
     }
 
     fetch(APP_SCRIPT_URL + "?name=" + encodeURIComponent(name))
-      .then(r => {
-        if (!r.ok) throw new Error(r.statusText);
-        return r.json();
-      })
-      .then(data => {
-        if (!Array.isArray(data) || data.length === 0) {
+      .then(r=>r.ok ? r.json() : Promise.reject(r.statusText))
+      .then(data=>{
+        if (!Array.isArray(data) || data.length===0)
           throw new Error("Aucune donnée");
-        }
         rawData = data;
         drawChart("all");
       })
-      .catch(e => {
-        document.querySelector("main").innerHTML = 
+      .catch(e=>{
+        document.querySelector("main").innerHTML =
           `<p class="error">❌ Erreur : ${e.message}</p>`;
       });
 
-    document.querySelectorAll("#ranges a").forEach(a=>{
+    document.querySelectorAll("#ranges a").forEach(a=>
       a.addEventListener("click", e=>{
         e.preventDefault();
         drawChart(a.dataset.range);
-      });
-    });
+      })
+    );
     document.getElementById("refresh").addEventListener("click", ()=>{
       fetch(APP_SCRIPT_URL + "?name=" + encodeURIComponent(name))
         .then(r=>r.json())
-        .then(data=>{
-          rawData = data;
-          drawChart(document.querySelector("#ranges .active").dataset.range);
-        })
+        .then(data=>{ rawData=data; drawChart(document.querySelector("#ranges .active").dataset.range) })
         .catch(()=>{/* silent */});
     });
     document.getElementById("fullscreen").addEventListener("click", ()=>{
       const el = document.getElementById("chart-container");
-      if (document.fullscreenElement) {
-        document.exitFullscreen();
-      } else {
-        el.requestFullscreen();
-      }
+      document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen();
     });
   });
   </script>
