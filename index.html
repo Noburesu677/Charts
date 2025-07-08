@@ -5,49 +5,43 @@
   <meta charset="UTF-8">
   <title>AnomicValue Charts</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <!-- Si ton style.css est dans assets/, adapte le chemin ci-dessous -->
-  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div id="stars"></div>
+  <div id="stars2"></div>
 
   <header>
     <h1 id="logo">AnomicValue</h1>
-    <nav id="ranges">
-      <a href="#" data-range="all" class="active">All</a>
-      <a href="#" data-range="365">1Y</a>
-      <a href="#" data-range="90">3M</a>
-      <a href="#" data-range="30">1M</a>
-      <a href="#" data-range="7">1W</a>
-      <a href="#" data-range="1">1D</a>
-    </nav>
   </header>
 
   <main>
-    <div id="chart-container">
+    <section id="chart-box">
       <canvas id="chart"></canvas>
-      <div id="actions">
-        <button id="refresh" title="Reload">⚡</button>
-        <button id="fullscreen" title="Fullscreen">⤢</button>
+      <div id="controls">
+        <button data-range="all" class="active">All</button>
+        <button data-range="365">1Y</button>
+        <button data-range="90">3M</button>
+        <button data-range="30">1M</button>
+        <button data-range="7">1W</button>
+        <button data-range="1">1D</button>
       </div>
-    </div>
+    </section>
   </main>
 
-  <footer>© 2025 AnomicValue. All rights reserved.</footer>
+  <footer>© 2025 AnomicValue</footer>
 
   <script>
   document.addEventListener("DOMContentLoaded", ()=>{
-    const APP_SCRIPT_URL =
-      "https://script.google.com/macros/s/AKfycbzyaaDiRnXsKyx5-CwD_XFzPoCswdJoU_yfNLdmvanYPrgrUg_CjLDs8KlIHOLevsiSTg/exec";
+    const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzyaaDiRnXsKyx5-CwD_XFzPoCswdJoU_yfNLdmvanYPrgrUg_CjLDs8KlIHOLevsiSTg/exec";
     const params = new URLSearchParams(location.search);
     const name   = params.get("name") || params.get("item");
     const ctx    = document.getElementById("chart").getContext("2d");
     let chart, rawData;
 
     if (!name) {
-      document.querySelector("main").innerHTML =
-        `<p class="error">❌ Paramètre manquant : &nbsp;<code>?name=NomDeItem</code></p>`;
+      alert("❌ Paramètre manquant: ?name=NomDeItem");
       return;
     }
 
@@ -55,30 +49,30 @@
       let subset = rawData;
       if (range !== "all") {
         const cutoff = Date.now()/1000 - range*24*3600;
-        subset = rawData.filter(p => p.t >= cutoff);
+        subset = rawData.filter(p=>p.t>=cutoff);
       }
-      const labels = subset.map(p => new Date(p.t*1000).toLocaleDateString());
-      const values = subset.map(p => p.v);
+      const labels = subset.map(p=>new Date(p.t*1000).toLocaleDateString());
+      const values = subset.map(p=>p.v);
 
       const cfg = {
         type: "line",
-        data: { labels, datasets: [{
-          label: name,
+        data: { labels, datasets: [{ 
+          label: name, 
           data: values,
-          borderColor: "#0FF",
-          backgroundColor: "rgba(0,255,255,0.1)",
-          pointRadius: 3,
-          tension: 0.3
-        }]},
+          borderColor: '#00FFFF',
+          backgroundColor: 'rgba(0,255,255,0.1)',
+          pointRadius: 4,
+          tension: 0.2
+        }] },
         options: {
           responsive: true,
-          maintainAspectRatio: false,  // <-- important
+          maintainAspectRatio: false,
           plugins: {
-            legend: { labels:{ color:"#0FF", font:{size:16} } }
+            legend:{ labels:{ color:'#00FFFF', font:{size:14} } }
           },
           scales: {
-            x:{ ticks:{ color:"#EEE" }, grid:{ color:"#333" } },
-            y:{ ticks:{ color:"#EEE", callback:v=>v.toLocaleString() }, grid:{ color:"#333" } }
+            x:{ ticks:{ color:'#AAA' }, grid:{ color:'rgba(0,255,255,0.2)' } },
+            y:{ ticks:{ color:'#AAA', callback:v=>v.toLocaleString() }, grid:{ color:'rgba(0,255,255,0.2)' } }
           }
         }
       };
@@ -91,39 +85,26 @@
         chart = new Chart(ctx, cfg);
       }
 
-      document.querySelectorAll("#ranges a").forEach(a=>
-        a.classList.toggle("active", a.dataset.range === range)
-      );
+      document.querySelectorAll('#controls button').forEach(b=>{
+        b.classList.toggle('active', b.dataset.range===range);
+      });
     }
 
     fetch(`${APP_SCRIPT_URL}?name=${encodeURIComponent(name)}`)
       .then(r=>r.ok ? r.json() : Promise.reject(r.statusText))
       .then(data=>{
-        if (!Array.isArray(data) || data.length===0)
-          throw new Error("Aucune donnée");
-        rawData = data;
-        drawChart("all");
+        if (!Array.isArray(data)||data.length===0) throw new Error('Aucune donnée');
+        rawData=data;
+        drawChart('all');
       })
       .catch(e=>{
-        document.querySelector("main").innerHTML =
-          `<p class="error">❌ Erreur : ${e.message}</p>`;
+        alert(`❌ Erreur: ${e.message}`);
       });
 
-    document.querySelectorAll("#ranges a").forEach(a=>
-      a.addEventListener("click", e=>{
-        e.preventDefault();
-        drawChart(a.dataset.range);
-      })
-    );
-    document.getElementById("refresh").addEventListener("click", ()=>{
-      fetch(`${APP_SCRIPT_URL}?name=${encodeURIComponent(name)}`)
-        .then(r=>r.json())
-        .then(data=>{ rawData=data; drawChart(document.querySelector("#ranges .active").dataset.range) })
-        .catch(()=>{/* silent */});
-    });
-    document.getElementById("fullscreen").addEventListener("click", ()=>{
-      const el = document.getElementById("chart-container");
-      document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen();
+    document.querySelectorAll('#controls button').forEach(btn=>{
+      btn.addEventListener('click', e=>{
+        drawChart(btn.dataset.range);
+      });
     });
   });
   </script>
