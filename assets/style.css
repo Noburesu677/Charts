@@ -1,214 +1,108 @@
-/* assets/style.css */
+/* reset */
+* { margin:0; padding:0; box-sizing: border-box; }
 
-/* === Variables & reset === */
-:root {
-  --bg: #000000;
-  --text: #eeeeff;
-  --accent: #66ccff;
-  --panel-bg: rgba(0,0,0,0.6);
+/* fond étoilé */
+#stars {
+  position: fixed; top:0; left:0; width:100%; height:100%;
+  background: black;
+  overflow: hidden;
+  z-index:-1;
 }
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+#stars::after {
+  content:""; position:absolute;
+  width:300%; height:300%;
+  background: url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/1231630/starfield.png') repeat;
+  animation: moveStars 60s linear infinite;
+  opacity: 0.3;
 }
+@keyframes moveStars {
+  from {transform: translate(0,0);}
+  to   {transform: translate(-1000px, 500px);}
+}
+
+/* structure */
 body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Roboto', sans-serif;
-  overflow-x: hidden;
+  font-family: "Segoe UI",Tahoma,sans-serif;
+  color: #EEE;
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
 }
-
-/* Starfield derrière tout (pointer-events none) */
-#starfield {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  z-index: -2;
-  pointer-events: none;
-}
-
-/* Header */
 header {
-  position: relative; z-index: 10;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background: var(--panel-bg);
-  backdrop-filter: blur(4px);
-  border-bottom: 1px solid var(--accent);
-  animation: fadeInDown 0.8s ease-out;
 }
-.logo-text {
+#logo {
   font-size: 2rem;
-  font-weight: 500;
-  color: #0ff;
-  text-shadow:
-    0 0 5px #0ff,
-    0 0 10px #0ff,
-    0 0 20px #0ff,
-    0 0 30px rgba(0,255,255,0.2);
-  transition: text-shadow 0.2s, color 0.2s;
-  cursor: pointer;
+  color: #0FF;
+  text-shadow: 0 0 8px #0FF;
+  transition: text-shadow .3s;
+  cursor: default;
 }
-.logo-text:hover {
-  animation: neonFlicker 1.5s ease-in-out infinite alternate;
+#logo:hover {
+  text-shadow: 0 0 16px #0FF;
 }
-@keyframes neonFlicker {
-  0%,100% {
-    text-shadow:
-      0 0 5px #0ff,
-      0 0 10px #0ff,
-      0 0 20px #0ff,
-      0 0 30px rgba(0,255,255,0.2);
-    color: #0ff;
-  }
-  50% {
-    text-shadow:
-      0 0 8px #0ff,
-      0 0 16px #0ff,
-      0 0 30px #0ff,
-      0 0 40px rgba(0,255,255,0.3);
-    color: #aff;
-  }
-}
-nav a {
-  margin-left: 1.5rem;
-  color: var(--text);
+
+#ranges a {
+  margin-left: 1rem;
   text-decoration: none;
-  opacity: 0;
-  transform: translateY(-10px);
-  animation: navFade 0.6s ease-out forwards;
+  color: #888;
+  font-weight: bold;
+  transition: color .3s;
 }
-nav a:nth-child(1) { animation-delay: 0.3s; }
-nav a:nth-child(2) { animation-delay: 0.5s; }
-nav a:hover, nav a.active {
-  color: #fff;
-}
-nav a.active::after {
-  content: "";
-  position: absolute;
-  bottom: -4px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: var(--accent);
+#ranges a.active, #ranges a:hover {
+  color: #0FF;
 }
 
-/* Main centré */
 main {
+  flex:1;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   padding: 2rem;
-  position: relative;
-  z-index: 5;
 }
-
-/* Chart container */
-#chartContainer {
+#chart-container {
   position: relative;
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-  background: var(--panel-bg);
-  backdrop-filter: blur(4px);
-  padding: 1.5rem;
-  border: 1px solid var(--accent);
+  width: 80vw;
+  height: 60vh;
+  border: 2px solid #0FF;
   border-radius: 8px;
-  width: 75vw;
-  max-width: 1000px;
-  height: 75vh;
-  margin: auto;
   overflow: hidden;
-  animation: glow 4s ease-in-out infinite alternate;
+  box-shadow: 0 0 20px rgba(0,255,255,0.5);
 }
-@keyframes glow {
-  from { box-shadow: 0 0 10px var(--accent); }
-  to   { box-shadow: 0 0 30px var(--accent); }
-}
-#chartContainer canvas#miniChart {
-  width: 100% !important;
-  margin-bottom: 1rem;
-}
-#chartContainer canvas#mainChart {
-  width: 100% !important;
-  max-height: calc(75vh - 140px) !important;
-  margin-top: -0.5rem;
-}
-
-/* Overlay de chargement */
-#loadingOverlay {
+#actions {
   position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 6;
+  top: 0.5rem; right: 0.5rem;
+  display: flex; gap: 0.5rem;
 }
-.spinner {
-  width: 40px; height: 40px;
-  border: 4px solid rgba(255,255,255,0.3);
-  border-top: 4px solid var(--accent);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-/* Plein écran centré */
-#chartContainer:fullscreen,
-#chartContainer:-webkit-full-screen {
-  width: 100vw !important;
-  height: 100vh !important;
-}
-#chartContainer:fullscreen canvas#mainChart,
-#chartContainer:-webkit-full-screen canvas#mainChart {
-  max-height: none !important;
-}
-
-/* Boutons */
-.chart-controls {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  z-index: 7;
-  display: flex;
-  gap: 0.5rem;
-}
-.chart-controls button {
-  background: rgba(0,0,0,0.8);
-  border: 1px solid var(--accent);
+#actions button {
+  background: rgba(0,255,255,0.2);
+  border: none;
+  padding: 0.5rem;
+  font-size: 1.2rem;
+  color: #0FF;
   border-radius: 4px;
-  width: 36px; height: 36px;
   cursor: pointer;
-  transition: background 0.3s, transform 0.3s;
+  transition: background .3s, transform .2s;
 }
-.chart-controls button:hover {
-  background: var(--accent);
+#actions button:hover {
+  background: rgba(0,255,255,0.4);
   transform: scale(1.1);
 }
-#fullscreenBtn::before { content: '⤢'; color: var(--text); }
-#contrastBtn::before  { content: '⚡'; color: var(--text); }
 
-/* Footer */
 footer {
-  position: relative;
-  z-index: 5;
   text-align: center;
-  padding: 0.5rem;
-  background: var(--panel-bg);
-  backdrop-filter: blur(4px);
-  font-size: 0.75rem;
-  color: #777;
+  padding: 1rem;
+  background: #111;
+  font-size: 0.9rem;
+  border-top: 1px solid #222;
 }
 
-/* Animations clés */
-@keyframes fadeIn         { from{opacity:0} to{opacity:1} }
-@keyframes fadeInDown     { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:none} }
-@keyframes navFade        { to{opacity:1;transform:none} }
-@keyframes spin           { to{transform:rotate(360deg)} }
+/* message d’erreur */
+.error {
+  color: #F55;
+  font-size: 1.2rem;
+  text-align: center;
+}
