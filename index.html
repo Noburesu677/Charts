@@ -2,11 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <base target="_top">
-  <title>AnomicValue Charts</title>
+  <title>AnomicValue</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
 
-  <!-- INLINE CSS NEON + STARFIELD -->
+  <!-- néon + étoilé inline -->
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
     *{margin:0;padding:0;box-sizing:border-box;}
@@ -15,164 +14,113 @@
     @keyframes drift{from{transform:translate(0,0)}to{transform:translate(-50%,-50%)}}
     body{font-family:'Orbitron',sans-serif;background:#000;color:#eee;display:flex;flex-direction:column;min-height:100vh;}
     header,footer{text-align:center;padding:1rem;background:rgba(0,0,0,.6);}
-    #logo{font-size:3rem;color:#0ff;text-shadow:0 0 4px #0ff,0 0 8px #0ff,0 0 12px #0ff,0 0 16px #0ff;animation:neon-flicker 1.8s ease-in-out infinite alternate;}
-    @keyframes neon-flicker{from{text-shadow:0 0 4px #0ff,0 0 8px #0ff,0 0 12px #0ff,0 0 16px #0ff;}to{text-shadow:0 0 6px #0ff,0 0 14px #0ff,0 0 20px #0ff,0 0 28px #0ff;}}
+    #logo{font-size:3rem;color:#0ff;text-shadow:0 0 4px #0ff,0 0 8px #0ff,0 0 12px #0ff,0 0 16px #0ff;}
     main{flex:1;display:flex;justify-content:center;align-items:center;padding:2rem;}
-    #chart-box{position:relative;width:80vmin;height:80vmin;max-width:700px;max-height:700px;background:#111;border:4px solid #0ff;border-radius:12px;box-shadow:0 0 30px rgba(0,255,255,.6),inset 0 0 15px rgba(0,255,255,.8);overflow:hidden;animation:glow 2s ease-in-out infinite alternate;}
-    @keyframes glow{from{box-shadow:0 0 20px rgba(0,255,255,.4),inset 0 0 10px rgba(0,255,255,.6);}to{box-shadow:0 0 40px rgba(0,255,255,.8),inset 0 0 20px rgba(0,255,255,1);}}
-    #chart-box canvas{width:100%!important;height:100%!important;display:block;}
-    #actions{position:absolute;top:10px;right:10px;display:flex;gap:.6rem;}
-    #actions button{background:rgba(0,255,255,.2);border:none;padding:.5rem;font-size:1.3rem;color:#0ff;border-radius:6px;cursor:pointer;box-shadow:0 0 6px rgba(0,255,255,.6);animation:pulse 2s ease-in-out infinite;transition:background .2s;}
-    #actions button:hover{background:rgba(0,255,255,.4);box-shadow:0 0 12px rgba(0,255,255,1);}
-    @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.1);}}
-    #controls{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:.5rem;}
-    #controls button{background:rgba(0,255,255,.2);border:2px solid transparent;padding:.5rem .8rem;font-size:.85rem;color:#0ff;border-radius:4px;cursor:pointer;transition:background .2s,border .2s,transform .2s;}
+    #chart-box{position:relative;width:80vmin;height:80vmin;max-width:700px;max-height:700px;background:#111;border:4px solid #0ff;border-radius:12px;box-shadow:0 0 30px rgba(0,255,255,.6),inset 0 0 15px rgba(0,255,255,.8);overflow:hidden;}
+    #chart-box canvas{width:100% !important;height:100% !important;}
+    #actions{position:absolute;top:10px;right:10px;display:flex;gap:.5rem;}
+    #actions button{background:rgba(0,255,255,.2);border:none;padding:.5rem;font-size:1.3rem;color:#0ff;border-radius:6px;cursor:pointer;transition:background .2s;}
+    #actions button:hover{background:rgba(0,255,255,.4);}
+    #controls{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:.4rem;}
+    #controls button{background:rgba(0,255,255,.2);border:2px solid transparent;padding:.5rem .8rem;font-size:.9rem;color:#0ff;border-radius:4px;cursor:pointer;transition:all .2s;}
     #controls button.active,#controls button:hover{background:rgba(0,255,255,.4);border-color:#0ff;transform:scale(1.1);}
   </style>
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div id="stars"></div><div id="stars2"></div>
-
   <header><h1 id="logo">AnomicValue</h1></header>
-
   <main>
-    <section id="chart-box">
+    <div id="chart-box">
       <canvas id="chart"></canvas>
       <div id="actions">
-        <button id="refresh" type="button" title="Refresh">⚡</button>
-        <button id="fullscreen" type="button" title="Fullscreen">⤢</button>
+        <button id="refresh" title="Refresh">⚡</button>
+        <button id="fullscreen" title="Fullscreen">⤢</button>
       </div>
       <div id="controls">
-        <button data-range="all" class="active" type="button">All</button>
-        <button data-range="365" type="button">1Y</button>
-        <button data-range="90" type="button">3M</button>
-        <button data-range="30" type="button">1M</button>
-        <button data-range="7" type="button">1W</button>
-        <button data-range="1" type="button">1D</button>
+        <button data-range="all" class="active">All</button>
+        <button data-range="365">1Y</button>
+        <button data-range="90">3M</button>
+        <button data-range="30">1M</button>
+        <button data-range="7">1W</button>
+        <button data-range="1">1D</button>
       </div>
-    </section>
+    </div>
   </main>
-
-  <footer>© 2025 AnomicValue. All rights reserved.</footer>
+  <footer>© 2025 AnomicValue</footer>
 
   <script>
-    const itemName = '<?= itemName ?>';  // transmis par doGet
+    const APP_SCRIPT_URL =
+      'https://script.google.com/macros/s/AKfycbzfPNzTWYNvbCDjnhsGmujnMo7rZLy8_reOkKmZbbK8ec5b_I1DRuD_S--PyAVMCPEjjg/exec';
+    const params = new URLSearchParams(location.search);
+    const itemName = params.get('name');
 
-    document.addEventListener("DOMContentLoaded", () => {
-      if (!itemName) {
-        document.querySelector("main").innerHTML =
-          `<p style="color:#f55;text-align:center;padding:2rem">
-             ❌ Missing parameter: <code>?name=ItemName</code>
-           </p>`;
-        return;
-      }
+    if (!itemName) {
+      document.body.innerHTML =
+        '<p style="color:#f55;text-align:center;padding:2rem">' +
+        '❌ Missing <code>?name=ItemName</code>' +
+        '</p>';
+    } else {
+      let chart, dataStore, currentRange = 'all';
+      const ctx = document.getElementById('chart').getContext('2d');
 
-      let chart, rawData, currentRange = 'all';
-      const ctx = document.getElementById("chart").getContext("2d");
-
-      function drawChart(range) {
+      function draw(range) {
         currentRange = range;
-        let subset = rawData;
-        if (range !== "all") {
-          const cutoff = Date.now()/1000 - range*86400; 
-          // attention : ça ne sert plus qu’à filtrer par index numérique
-          subset = rawData.filter(p => p.t >= cutoff);
+        let subset = dataStore;
+        if (range!=='all') {
+          const cutoffIndex = dataStore.length - range;
+          subset = dataStore.slice(cutoffIndex<0?0:cutoffIndex);
         }
-        const labels = subset.map(p => p.t.toString());
-        const values = subset.map(p => p.v);
-
+        const labels = subset.map(p=>p.t.toString());
+        const vals   = subset.map(p=>p.v);
         const cfg = {
-          type: "line",
-          data: {
-            labels,
-            datasets: [{
-              label: itemName,
-              data: values,
-              borderColor: '#00FFFF',
-              backgroundColor: 'rgba(0,255,255,0.1)',
-              tension: 0.2,
-              pointRadius: ctx => {
-                const i = ctx.dataIndex;
-                return i>0 && ctx.dataset.data[i]!==ctx.dataset.data[i-1] ? 5 : 0;
-              }
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-              x: {
-                title: { display: true, text: 'Record #' },
-                ticks: { color: '#AAA' },
-                grid: { color: 'rgba(0,255,255,0.2)' }
-              },
-              y: {
-                title: { display: true, text: 'Price' },
-                ticks: {
-                  color: '#AAA',
-                  callback: v => Number(v).toLocaleString()
-                },
-                grid: { color: 'rgba(0,255,255,0.2)' }
-              }
-            },
-            plugins: {
-              legend: {
-                labels: { color: '#00FFFF', font: { size: 14 } }
-              }
+          type:'line',
+          data:{ labels, datasets:[{ label:itemName, data:vals,
+            borderColor:'#0ff', backgroundColor:'rgba(0,255,255,0.1)',
+            pointRadius: (ctx) => {
+              const i=ctx.dataIndex;
+              return i>0 && ctx.dataset.data[i]!==ctx.dataset.data[i-1]?5:0;
             }
-          }
+          }]},
+          options:{ responsive:true, maintainAspectRatio:false }
         };
-
-        if (chart) {
-          chart.data = cfg.data;
-          chart.options = cfg.options;
-          chart.update();
-        } else {
-          chart = new Chart(ctx, cfg);
-        }
-        document.querySelectorAll('#controls button').forEach(b =>
-          b.classList.toggle('active', b.dataset.range === range)
+        if (chart) chart.destroy();
+        chart = new Chart(ctx, cfg);
+        document.querySelectorAll('#controls button').forEach(b=>
+          b.classList.toggle('active', b.dataset.range===range)
         );
       }
 
-      // appel serveur
-      google.script.run
-        .withSuccessHandler(data => {
-          rawData = data;
-          drawChart(currentRange);
-        })
-        .withFailureHandler(err => {
-          document.querySelector("main").innerHTML =
-            `<p style="color:#f55;text-align:center;padding:2rem">
-               ❌ Error loading data:<br>${err.message||err}
-             </p>`;
-        })
-        .getHistory(itemName);
+      function load() {
+        fetch(`${APP_SCRIPT_URL}?name=${encodeURIComponent(itemName)}`)
+          .then(r=>r.ok?r.json():Promise.reject(r.statusText))
+          .then(data=>{
+            dataStore = data;
+            draw(currentRange);
+          })
+          .catch(e=>{
+            document.body.innerHTML =
+              `<p style="color:#f55;text-align:center;padding:2rem">
+                ❌ Error: ${e}
+              </p>`;
+          });
+      }
 
-      // refresh
+      document.getElementById('controls').addEventListener('click', e=>{
+        const b=e.target.closest('button');
+        if (b) draw(b.dataset.range);
+      });
       document.getElementById('refresh')
-        .addEventListener('click', () => google.script.run.withSuccessHandler(d=>{
-          rawData=d; drawChart(currentRange);
-        }).getHistory(itemName));
-
-      // fullscreen
+        .addEventListener('click',load);
       document.getElementById('fullscreen')
-        .addEventListener('click', ()=> {
-          const el = document.getElementById('chart-box');
-          document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen();
+        .addEventListener('click',()=>{
+          const el=document.getElementById('chart-box');
+          document.fullscreenElement?document.exitFullscreen():el.requestFullscreen();
         });
 
-      // range selector
-      document.getElementById('controls')
-        .addEventListener('click', e => {
-          const btn = e.target.closest('button');
-          if (!btn) return;
-          drawChart(btn.dataset.range);
-        });
-    });
+      load();
+    }
   </script>
 </body>
 </html>
