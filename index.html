@@ -1,222 +1,158 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="UTF-8">
   <title>AnomicValue Charts</title>
-
-  <!-- Roboto, plus pro -->
-  <link
-    href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
-    rel="stylesheet"
-  />
-
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="style.css">
   <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- CSS principal (cache-bust) -->
-  <link rel="stylesheet" href="assets/style.css?v=6"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 </head>
 <body>
-  <!-- Fond étoilé (optionnel) -->
-  <canvas id="starfield"></canvas>
-
-  <!-- HEADER -->
-  <header class="fade-in-down">
-    <div class="logo">
-      <h1 class="logo-text">AnomicValue</h1>
-    </div>
-    <nav>
-      <a href="#all" style="--i:0">All</a>
-      <a href="#1d"  style="--i:1">1D</a>
-      <a href="#1w"  style="--i:2">1W</a>
-      <a href="#1m"  style="--i:3">1M</a>
-      <a href="#1y"  style="--i:4">1Y</a>
+  <div id="stars"></div>
+  <header>
+    <h1 id="logo">AnomicValue</h1>
+    <nav id="ranges">
+      <a href="#" data-range="all" class="active">All</a>
+      <a href="#" data-range="365">1Y</a>
+      <a href="#" data-range="90">3M</a>
+      <a href="#" data-range="30">1M</a>
+      <a href="#" data-range="7">1W</a>
+      <a href="#" data-range="1">1D</a>
     </nav>
   </header>
 
-  <!-- MAIN -->
   <main>
-    <div id="chartContainer" class="fade-in-up">
-      <div id="loadingOverlay"><div class="spinner"></div></div>
-      <canvas id="miniChart" width="200" height="50"></canvas>
-      <div class="chart-controls">
-        <button id="contrastBtn" aria-label="High Contrast"></button>
-        <button id="fullscreenBtn" aria-label="Fullscreen"></button>
+    <div id="chart-container">
+      <canvas id="chart"></canvas>
+      <div id="actions">
+        <button id="refresh" title="Reload">⚡</button>
+        <button id="fullscreen" title="Fullscreen">⤢</button>
       </div>
-      <canvas id="mainChart"></canvas>
     </div>
   </main>
 
-  <!-- FOOTER -->
-  <footer class="fade-in-up">
-    <p>© 2025 AnomicValue. All rights reserved.</p>
-  </footer>
+  <footer>© 2025 AnomicValue. All rights reserved.</footer>
 
   <script>
-    // — STARFIELD ANIMÉ —
-    const sf = document.getElementById('starfield'),
-          sctx = sf.getContext('2d');
-    let W, H;
-    function resizeSF(){
-      W = sf.width = innerWidth;
-      H = sf.height = innerHeight;
+    const APP_SCRIPT_URL = 
+      "https://script.google.com/macros/s/AKfycbzyaaDiRnXsKyx5-CwD_XFzPoCswdJoU_yfNLdmvanYPrgrUg_CjLDs8KlIHOLevsiSTg/exec";
+    const params = new URLSearchParams(location.search);
+    const name   = params.get("name") || params.get("item");
+    const ctx    = document.getElementById("chart").getContext("2d");
+    let chart, rawData;
+
+    if (!name) {
+      document.querySelector("main").innerHTML = `
+        <p class="error">❌ Paramètre manquant : ajoutez <code>?name=NomDeItem</code></p>`;
+    } else {
+      // fetch data
+      fetch(APP_SCRIPT_URL + "?name=" + encodeURIComponent(name))
+        .then(r => r.json())
+        .then(data => {
+          if (!Array.isArray(data) || data.length === 0) {
+            throw new Error("No data");
+          }
+          rawData = data;
+          drawChart("all");
+        })
+        .catch(e => {
+          document.querySelector("main").innerHTML = 
+            `<p class="error">❌ Erreur : ${e.message}</p>`;
+        });
     }
-    window.addEventListener('resize', resizeSF);
-    resizeSF();
-    const stars = Array.from({length:200}, ()=>({
-      x: Math.random()*W, y: Math.random()*H,
-      r: 0.5 + Math.random()*1.0,
-      a: 0.3 + Math.random()*0.7,
-      dx: (Math.random()-0.5)*0.2,
-      dy: (Math.random()-0.5)*0.2
-    }));
-    (function drawSF(){
-      sctx.clearRect(0,0,W,H);
-      for(const s of stars){
-        s.x = (s.x + s.dx + W)%W;
-        s.y = (s.y + s.dy + H)%H;
-        sctx.beginPath();
-        sctx.arc(s.x, s.y, s.r, 0, 2*Math.PI);
-        sctx.fillStyle = `rgba(255,255,255,${s.a})`;
-        sctx.fill();
+
+    // dessine ou met à jour le graphique
+    function drawChart(rangeDays) {
+      // filtrage
+      let subset = rawData.slice();
+      if (rangeDays !== "all") {
+        const cutoff = Date.now()/1000 - rangeDays*24*3600;
+        subset = subset.filter(p => p.t >= cutoff);
       }
-      requestAnimationFrame(drawSF);
-    })();
+      const labels = subset.map(p=>new Date(p.t*1000).toLocaleDateString());
+      const values = subset.map(p=>p.v);
 
-    // — CHART.JS & LOGIQUE —
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzyaaDiRnXsKyx5-CwD_XFzPoCswdJoU_yfNLdmvanYPrgrUg_CjLDs8KlIHOLevsiSTg/exec';
-    const mainCtx = document.getElementById('mainChart').getContext('2d'),
-          miniCtx = document.getElementById('miniChart').getContext('2d');
-    let mainChart, miniChart;
-
-    async function fetchData(item){
-      const res = await fetch(`${API_URL}?name=${encodeURIComponent(item)}`);
-      if(!res.ok) throw new Error(`HTTP ${res.status}`);
-      const arr = await res.json();
-      if(!Array.isArray(arr) || arr.length===0) throw new Error('No data');
-      return arr;
-    }
-
-    async function loadChart(mode){
-      const item = new URLSearchParams(location.search).get('item');
-      if(!item) throw new Error('Missing ?item');
-      const raw = await fetchData(item), grouped = {};
-      for(const p of raw){
-        const d = new Date(p.t*1000),
-              lbl = String(d.getDate()).padStart(2,'0') + '/' +
-                    String(d.getMonth()+1).padStart(2,'0');
-        grouped[lbl] = p.v;
-      }
-      return { labels: Object.keys(grouped), values: Object.values(grouped) };
-    }
-
-    async function updateCharts(mode){
-      document.getElementById('loadingOverlay').style.display = 'flex';
-      try {
-        const { labels, values } = await loadChart(mode);
-
-        // Main chart
-        if(mainChart){
-          mainChart.data.labels = labels;
-          mainChart.data.datasets[0].data = values;
-          mainChart.update();
-        } else {
-          mainChart = new Chart(mainCtx, {
-            type: 'line',
-            data: {
-              labels,
-              datasets: [{
-                label: 'Price',
-                data: values,
-                borderColor: '#66ccff',
-                borderWidth: 3,
-                backgroundColor: 'rgba(102,204,255,0.2)',
-                tension: 0.3,
-                pointRadius: 4,
-                pointBackgroundColor: '#66ccff',
-                pointBorderColor: '#ffffff',
-                pointHoverRadius: 6
-              }]
-            },
-            options: {
-              responsive: true,
-              interaction: { mode: 'nearest', intersect: true },
-              plugins: {
-                tooltip: { backgroundColor: '#000', titleColor: '#fff', bodyColor: '#fff' }
-              },
-              scales: {
-                x: {
-                  ticks: { color: '#eee' },
-                  grid: { color: 'rgba(102,204,255,0.1)' }
-                },
-                y: {
-                  ticks: {
-                    color: '#eee',
-                    callback: val => val.toLocaleString()
-                  },
-                  grid: { color: 'rgba(102,204,255,0.1)' }
-                }
+      const cfg = {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: name,
+            data: values,
+            borderColor: "#00FFFF",
+            backgroundColor: "rgba(0,255,255,0.1)",
+            pointRadius: 4,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: {
+                color: "#00FFFF",
+                font: {size: 18}
               }
             }
-          });
-        }
-
-        // Mini sparkline
-        if(miniChart){
-          miniChart.data.labels = labels;
-          miniChart.data.datasets[0].data = values;
-          miniChart.update();
-        } else {
-          miniChart = new Chart(miniCtx, {
-            type: 'line',
-            data: {
-              labels,
-              datasets: [{
-                data: values,
-                borderColor: '#66ccff',
-                borderWidth: 2,
-                backgroundColor: 'transparent',
-                tension: 0.3,
-                pointRadius: 0
-              }]
+          },
+          scales: {
+            x: {
+              ticks: {color: "#EEE"},
+              grid: {color: "#333"}
             },
-            options: {
-              responsive: true,
-              plugins: { legend: { display: false } },
-              scales: { x: { display: false }, y: { display: false } }
+            y: {
+              ticks: {color: "#EEE", callback: v=>v.toLocaleString()},
+              grid: {color: "#333"}
             }
-          });
+          }
         }
+      };
 
-      } catch(err) {
-        console.error(err);
-      } finally {
-        document.getElementById('loadingOverlay').style.display = 'none';
+      if (chart) {
+        chart.data = cfg.data;
+        chart.options = cfg.options;
+        chart.update();
+      } else {
+        chart = new Chart(ctx, cfg);
       }
+
+      // switch active link
+      document.querySelectorAll("#ranges a").forEach(a=>{
+        a.classList.toggle("active", a.dataset.range === rangeDays);
+      });
     }
 
-    document.querySelectorAll('nav a').forEach(a => {
-      a.addEventListener('click', e => {
+    // gestion nav
+    document.querySelectorAll("#ranges a").forEach(a=>{
+      a.addEventListener("click", e=>{
         e.preventDefault();
-        document.querySelectorAll('nav a').forEach(n => n.classList.remove('active'));
-        a.classList.add('active');
-        updateCharts(a.getAttribute('href').slice(1));
+        drawChart(a.dataset.range);
       });
     });
 
-    window.addEventListener('DOMContentLoaded', () => {
-      document.querySelector('nav a[href="#all"]').click();
+    // bouton rafraîchir
+    document.getElementById("refresh").addEventListener("click", ()=>{
+      if (name) {
+        fetch(APP_SCRIPT_URL + "?name=" + encodeURIComponent(name))
+          .then(r=>r.json())
+          .then(data=>{
+            rawData = data;
+            drawChart(document.querySelector("#ranges .active").dataset.range);
+          });
+      }
     });
 
-    document.getElementById('fullscreenBtn').onclick = () => {
-      const el = document.getElementById('chartContainer');
-      document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen();
-    };
-    document.getElementById('contrastBtn').onclick = () => {
-      document.body.classList.toggle('high-contrast');
-    };
+    // plein écran
+    document.getElementById("fullscreen").addEventListener("click", ()=>{
+      const el = document.getElementById("chart-container");
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        el.requestFullscreen();
+      }
+    });
   </script>
 </body>
 </html>
