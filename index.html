@@ -1,129 +1,167 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <title>AnomicValue Charts</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
-</head>
-<body>
-  <div id="stars"></div>
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>AnomicValue Charts</title>
+    <!-- Inclusion du CSS -->
+    <style>
+      <?!= include('style'); ?>
+    </style>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <!-- étoilé (derrière tout) -->
+    <canvas id="starfield"></canvas>
 
-  <header>
-    <h1 id="logo">AnomicValue</h1>
-    <nav id="ranges">
-      <a href="#" data-range="all" class="active">All</a>
-      <a href="#" data-range="365">1Y</a>
-      <a href="#" data-range="90">3M</a>
-      <a href="#" data-range="30">1M</a>
-      <a href="#" data-range="7">1W</a>
-      <a href="#" data-range="1">1D</a>
-    </nav>
-  </header>
+    <header class="fade-in-down">
+      <div class="logo"><h1>AnomicValue Charts</h1></div>
+      <nav>
+        <a href="#all" style="--i:0">All</a>
+        <a href="#1d"  style="--i:1">1D</a>
+        <a href="#1w"  style="--i:2">1W</a>
+        <a href="#1m"  style="--i:3">1M</a>
+        <a href="#1y"  style="--i:4">1Y</a>
+      </nav>
+    </header>
 
-  <main>
-    <div id="chart-container">
-      <canvas id="chart"></canvas>
-      <div id="actions">
-        <button id="refresh" title="Reload">⚡</button>
-        <button id="fullscreen" title="Fullscreen">⤢</button>
+    <main>
+      <div id="chartContainer" class="fade-in-up">
+        <div id="loadingOverlay"><div class="spinner"></div></div>
+        <canvas id="miniChart" width="200" height="50"></canvas>
+        <div class="chart-controls">
+          <button id="contrastBtn" aria-label="High Contrast"></button>
+          <button id="fullscreenBtn" aria-label="Fullscreen"></button>
+        </div>
+        <canvas id="mainChart"></canvas>
       </div>
-    </div>
-  </main>
+    </main>
 
-  <footer>© 2025 AnomicValue. All rights reserved.</footer>
+    <footer class="fade-in-up">
+      <p>© 2025 AnomicValue. All rights reserved.</p>
+    </footer>
 
-  <script>
-  document.addEventListener("DOMContentLoaded", ()=>{
-    const APP_SCRIPT_URL =
-      "https://script.google.com/macros/s/AKfycbzyaaDiRnXsKyx5-CwD_XFzPoCswdJoU_yfNLdmvanYPrgrUg_CjLDs8KlIHOLevsiSTg/exec";
-    const params = new URLSearchParams(location.search);
-    const name   = params.get("name") || params.get("item");
-    const ctx    = document.getElementById("chart").getContext("2d");
-    let chart, rawData;
-
-    if (!name) {
-      document.querySelector("main").innerHTML =
-        `<p class="error">❌ Paramètre manquant : &nbsp;<code>?name=NomDeItem</code></p>`;
-      return;
-    }
-
-    function drawChart(range) {
-      let subset = rawData;
-      if (range !== "all") {
-        const cutoff = Date.now()/1000 - range*24*3600;
-        subset = rawData.filter(p=>p.t >= cutoff);
+    <script>
+      // — Starfield animé —
+      const sf = document.getElementById('starfield'),
+            sctx = sf.getContext('2d');
+      let W, H;
+      function resizeSF(){
+        W = sf.width = window.innerWidth;
+        H = sf.height = window.innerHeight;
       }
-      const labels = subset.map(p=>new Date(p.t*1000).toLocaleDateString());
-      const values = subset.map(p=>p.v);
+      window.addEventListener('resize', resizeSF);
+      resizeSF();
+      const stars = Array.from({length:200}, ()=>({
+        x:Math.random()*W, y:Math.random()*H,
+        r:Math.random()*1.2, a:0.3+Math.random()*0.7,
+        dx:(Math.random()-0.5)*0.1, dy:(Math.random()-0.5)*0.1
+      }));
+      (function drawSF(){
+        sctx.clearRect(0,0,W,H);
+        stars.forEach(s=>{
+          s.x=(s.x+s.dx+W)%W; s.y=(s.y+s.dy+H)%H;
+          sctx.beginPath();
+          sctx.arc(s.x,s.y,s.r,0,2*Math.PI);
+          sctx.fillStyle=`rgba(255,255,255,${s.a})`;
+          sctx.fill();
+        });
+        requestAnimationFrame(drawSF);
+      })();
 
-      const cfg = {
-        type: "line",
-        data: { labels, datasets: [{
-          label: name,
-          data: values,
-          borderColor: "#0FF",
-          backgroundColor: "rgba(0,255,255,0.1)",
-          pointRadius: 3,
-          tension: 0.3
-        }]},
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { labels:{ color:"#0FF", font:{size:16} } }
-          },
-          scales: {
-            x:{ ticks:{ color:"#EEE" }, grid:{ color:"#333" } },
-            y:{ ticks:{ color:"#EEE", callback:v=>v.toLocaleString() }, grid:{ color:"#333" } }
+      // — Chart.js & fetch —
+      const URL    = `${location.origin}${location.pathname}`,
+            mainCtx= document.getElementById('mainChart').getContext('2d'),
+            miniCtx= document.getElementById('miniChart').getContext('2d');
+      let mainChart, miniChart;
+
+      async function fetchData(item){
+        const r = await fetch(`${URL}?name=${encodeURIComponent(item)}`);
+        if(!r.ok) throw `HTTP ${r.status}`;
+        const j = await r.json();
+        if(!Array.isArray(j)|| !j.length) throw 'No data';
+        return j;
+      }
+      async function loadChart(mode){
+        const item = new URLSearchParams(location.search).get('item');
+        if(!item) throw 'Missing ?item';
+        const raw = await fetchData(item), grouped={};
+        raw.forEach(p=>{
+          const d = new Date(p.t*1000),
+                lbl = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+          grouped[lbl] = p.v;
+        });
+        return {labels:Object.keys(grouped), values:Object.values(grouped)};
+      }
+      async function updateCharts(mode){
+        document.getElementById('loadingOverlay').style.display='flex';
+        try{
+          const {labels,values} = await loadChart(mode);
+          if(mainChart){
+            mainChart.data.labels=labels;
+            mainChart.data.datasets[0].data=values;
+            mainChart.update();
+          } else {
+            mainChart = new Chart(mainCtx,{
+              type:'line',
+              data:{labels,datasets:[{
+                label:'Price',
+                data:values,
+                borderColor:'#66ccff',
+                backgroundColor:'transparent',
+                pointRadius:4
+              }]},
+              options:{
+                responsive:true,
+                interaction:{mode:'nearest',intersect:true},
+                plugins:{tooltip:{backgroundColor:'#000'}},
+                scales:{
+                  x:{ticks:{color:'#eee'},grid:{color:'rgba(102,204,255,0.2)'}},
+                  y:{ticks:{color:'#eee'},grid:{color:'rgba(102,204,255,0.2)'}}
+                }
+              }
+            });
           }
-        }
-      };
-
-      if (chart) {
-        chart.data = cfg.data;
-        chart.options = cfg.options;
-        chart.update();
-      } else {
-        chart = new Chart(ctx, cfg);
+          if(miniChart){
+            miniChart.data.labels=labels;
+            miniChart.data.datasets[0].data=values;
+            miniChart.update();
+          } else {
+            miniChart = new Chart(miniCtx,{
+              type:'line',
+              data:{labels,datasets:[{
+                data:values,
+                borderColor:'#66ccff',
+                backgroundColor:'transparent',
+                pointRadius:0
+              }]},
+              options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}}}
+            });
+          }
+        }catch(e){ console.error(e) }
+        finally{ document.getElementById('loadingOverlay').style.display='none' }
       }
 
-      document.querySelectorAll("#ranges a").forEach(a=>
-        a.classList.toggle("active", a.dataset.range === range)
-      );
-    }
-
-    fetch(APP_SCRIPT_URL + "?name=" + encodeURIComponent(name))
-      .then(r=>r.ok ? r.json() : Promise.reject(r.statusText))
-      .then(data=>{
-        if (!Array.isArray(data) || data.length===0)
-          throw new Error("Aucune donnée");
-        rawData = data;
-        drawChart("all");
-      })
-      .catch(e=>{
-        document.querySelector("main").innerHTML =
-          `<p class="error">❌ Erreur : ${e.message}</p>`;
+      document.querySelectorAll('nav a').forEach(a=>{
+        a.addEventListener('click', e=>{
+          e.preventDefault();
+          document.querySelectorAll('nav a').forEach(n=>n.classList.remove('active'));
+          a.classList.add('active');
+          updateCharts(a.getAttribute('href').slice(1));
+        });
+      });
+      window.addEventListener('DOMContentLoaded',()=>{
+        document.querySelector('nav a[href="#all"]').click();
       });
 
-    document.querySelectorAll("#ranges a").forEach(a=>
-      a.addEventListener("click", e=>{
-        e.preventDefault();
-        drawChart(a.dataset.range);
-      })
-    );
-    document.getElementById("refresh").addEventListener("click", ()=>{
-      fetch(APP_SCRIPT_URL + "?name=" + encodeURIComponent(name))
-        .then(r=>r.json())
-        .then(data=>{ rawData=data; drawChart(document.querySelector("#ranges .active").dataset.range) })
-        .catch(()=>{/* silent */});
-    });
-    document.getElementById("fullscreen").addEventListener("click", ()=>{
-      const el = document.getElementById("chart-container");
-      document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen();
-    });
-  });
-  </script>
-</body>
+      document.getElementById('fullscreenBtn').onclick = ()=>{
+        const el = document.getElementById('chartContainer');
+        document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen();
+      };
+      document.getElementById('contrastBtn').onclick = ()=>{
+        document.body.classList.toggle('high-contrast');
+      };
+    </script>
+  </body>
 </html>
