@@ -5,45 +5,40 @@
   box-sizing: border-box;
 }
 
-/* ── FOND ÉTOILÉ ANIMÉ ─────────────────────────────────────────────── */
+/* ── FOND ÉTOILÉ ANIMÉ ───────────────────────────────────────── */
 #stars {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: black;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: #000;
   overflow: hidden;
   z-index: -1;
 }
 #stars::after {
   content: "";
   position: absolute;
-  width: 300%;
-  height: 300%;
+  width: 300%; height: 300%;
   background: url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/1231630/starfield.png') repeat;
   animation: moveStars 60s linear infinite;
   opacity: 0.3;
 }
 @keyframes moveStars {
-  from { transform: translate(0, 0); }
-  to   { transform: translate(-1000px, 500px); }
+  from { transform: translate(0,0); }
+  to   { transform: translate(-1000px,500px); }
 }
 
-/* ── TYPOGRAPHIE & COULEURS ───────────────────────────────────────── */
+/* ── FONT & NEON ───────────────────────────────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
-
 body {
+  font-family: 'Orbitron', sans-serif;
+  background: #000;
+  color: #eee;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #000;
-  color: #EEE;
-  font-family: 'Orbitron', sans-serif;
-  overflow-x: hidden;
 }
 
-/* ── HEADER ─────────────────────────────────────────────────────────── */
+/* ── HEADER ───────────────────────────────────────────────────── */
 header {
   display: flex;
   justify-content: space-between;
@@ -58,8 +53,7 @@ header {
     0 0 8px #0ff,
     0 0 12px #0ff,
     0 0 16px #0ff;
-  transition: text-shadow 0.3s;
-  cursor: default;
+  transition: text-shadow .3s;
 }
 #logo:hover {
   text-shadow:
@@ -73,19 +67,32 @@ nav#ranges a {
   text-decoration: none;
   color: #888;
   font-weight: 700;
-  transition: color 0.2s;
+  transition: color .2s;
+  position: relative;
+}
+nav#ranges a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: 0 0 8px rgba(0,255,255,0.6);
+  opacity: 0;
+  transition: opacity .3s;
+}
+nav#ranges a:hover::after,
+nav#ranges a.active::after {
+  opacity: 1;
 }
 nav#ranges a.active,
 nav#ranges a:hover {
   color: #0ff;
 }
 
-/* ── MAIN & CHART ────────────────────────────────────────────────────── */
+/* ── MAIN & CHART ─────────────────────────────────────────────── */
 main {
   flex: 1;
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   padding: 2rem;
 }
 #chart-container {
@@ -94,17 +101,17 @@ main {
   height: 60vh;
   border: 2px solid #0ff;
   border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
   background: #111;
+  box-shadow: 0 0 20px rgba(0,255,255,0.4);
+  overflow: hidden;
 }
 #chart-container canvas {
-  display: block;
   width: 100% !important;
   height: 100% !important;
+  display: block;
 }
 
-/* ── ACTION BUTTONS ──────────────────────────────────────────────────── */
+/* ── ACTIONS ───────────────────────────────────────────────────── */
 #actions {
   position: absolute;
   top: 0.8rem;
@@ -113,38 +120,50 @@ main {
   gap: 0.5rem;
 }
 #actions button {
-  background: rgba(0, 255, 255, 0.2);
+  background: rgba(0,255,255,0.2);
   border: none;
   padding: 0.5rem;
   font-size: 1.2rem;
   color: #0ff;
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
+  transition: background .2s, transform .2s;
+  position: relative;
+}
+#actions button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: 0 0 8px rgba(0,255,255,0.6);
+  opacity: 0;
+  transition: opacity .3s;
+}
+#actions button:hover::after {
+  opacity: 1;
 }
 #actions button:hover {
-  background: rgba(0, 255, 255, 0.4);
+  background: rgba(0,255,255,0.4);
   transform: scale(1.1);
 }
 
-/* ── FOOTER ─────────────────────────────────────────────────────────── */
+/* ── FOOTER ─────────────────────────────────────────────────────── */
 footer {
   text-align: center;
   padding: 1rem;
-  background: #111;
   font-size: 0.9rem;
+  background: #111;
   border-top: 1px solid #222;
 }
 
-/* ── INFOS ERREUR ────────────────────────────────────────────────────── */
+/* ── ERREURS ─────────────────────────────────────────────────────── */
 .error {
-  padding: 2rem;
   color: #f55;
-  text-align: center;
   font-size: 1.2rem;
+  text-align: center;
+  padding: 2rem;
 }
 
-/* ── RESPONSIVE ─────────────────────────────────────────────────────── */
+/* ── RESPONSIVE ─────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   #chart-container {
     width: 90vw;
@@ -157,21 +176,4 @@ footer {
     margin-left: 0.5rem;
     font-size: 0.9rem;
   }
-}
-
-/* ── PETITS DÉTAILS NEON ─────────────────────────────────────────────── */
-button, nav#ranges a {
-  position: relative;
-}
-button::after, nav#ranges a::after {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; right: 0; bottom: 0;
-  box-shadow: 0 0 8px rgba(0,255,255,0.6);
-  opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none;
-}
-button:hover::after, nav#ranges a:hover::after, nav#ranges a.active::after {
-  opacity: 1;
 }
