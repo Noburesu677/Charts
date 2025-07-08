@@ -5,11 +5,13 @@
   <title>AnomicValue Charts</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="stylesheet" href="style.css">
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+
+  <!-- Chart.js UMD (v4.3.0) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <div id="stars"></div>
+
   <header>
     <h1 id="logo">AnomicValue</h1>
     <nav id="ranges">
@@ -35,36 +37,21 @@
   <footer>© 2025 AnomicValue. All rights reserved.</footer>
 
   <script>
+  document.addEventListener("DOMContentLoaded", ()=> {
     const APP_SCRIPT_URL = 
       "https://script.google.com/macros/s/AKfycbzyaaDiRnXsKyx5-CwD_XFzPoCswdJoU_yfNLdmvanYPrgrUg_CjLDs8KlIHOLevsiSTg/exec";
-    const params = new URLSearchParams(location.search);
-    const name   = params.get("name") || params.get("item");
-    const ctx    = document.getElementById("chart").getContext("2d");
+    const params  = new URLSearchParams(location.search);
+    const name    = params.get("name") || params.get("item");
+    const ctx     = document.getElementById("chart").getContext("2d");
     let chart, rawData;
 
     if (!name) {
-      document.querySelector("main").innerHTML = `
-        <p class="error">❌ Paramètre manquant : ajoutez <code>?name=NomDeItem</code></p>`;
-    } else {
-      // fetch data
-      fetch(APP_SCRIPT_URL + "?name=" + encodeURIComponent(name))
-        .then(r => r.json())
-        .then(data => {
-          if (!Array.isArray(data) || data.length === 0) {
-            throw new Error("No data");
-          }
-          rawData = data;
-          drawChart("all");
-        })
-        .catch(e => {
-          document.querySelector("main").innerHTML = 
-            `<p class="error">❌ Erreur : ${e.message}</p>`;
-        });
+      document.querySelector("main").innerHTML = 
+        `<p class="error">❌ Paramètre manquant : ajoutez <code>?name=NomDeItem</code></p>`;
+      return;
     }
 
-    // dessine ou met à jour le graphique
     function drawChart(rangeDays) {
-      // filtrage
       let subset = rawData.slice();
       if (rangeDays !== "all") {
         const cutoff = Date.now()/1000 - rangeDays*24*3600;
@@ -93,18 +80,21 @@
             legend: {
               labels: {
                 color: "#00FFFF",
-                font: {size: 18}
+                font: { size: 18 }
               }
             }
           },
           scales: {
             x: {
-              ticks: {color: "#EEE"},
-              grid: {color: "#333"}
+              ticks: { color: "#EEE" },
+              grid: { color: "#333" }
             },
             y: {
-              ticks: {color: "#EEE", callback: v=>v.toLocaleString()},
-              grid: {color: "#333"}
+              ticks: { 
+                color: "#EEE",
+                callback: v => v.toLocaleString()
+              },
+              grid: { color: "#333" }
             }
           }
         }
@@ -118,33 +108,45 @@
         chart = new Chart(ctx, cfg);
       }
 
-      // switch active link
       document.querySelectorAll("#ranges a").forEach(a=>{
         a.classList.toggle("active", a.dataset.range === rangeDays);
       });
     }
 
-    // gestion nav
+    // récupération des données
+    fetch(APP_SCRIPT_URL + "?name=" + encodeURIComponent(name))
+      .then(r => {
+        if (!r.ok) throw new Error(r.statusText);
+        return r.json();
+      })
+      .then(data => {
+        if (!Array.isArray(data) || data.length === 0) {
+          throw new Error("Aucune donnée");
+        }
+        rawData = data;
+        drawChart("all");
+      })
+      .catch(e => {
+        document.querySelector("main").innerHTML = 
+          `<p class="error">❌ Erreur : ${e.message}</p>`;
+      });
+
+    // interactions
     document.querySelectorAll("#ranges a").forEach(a=>{
       a.addEventListener("click", e=>{
         e.preventDefault();
         drawChart(a.dataset.range);
       });
     });
-
-    // bouton rafraîchir
     document.getElementById("refresh").addEventListener("click", ()=>{
-      if (name) {
-        fetch(APP_SCRIPT_URL + "?name=" + encodeURIComponent(name))
-          .then(r=>r.json())
-          .then(data=>{
-            rawData = data;
-            drawChart(document.querySelector("#ranges .active").dataset.range);
-          });
-      }
+      fetch(APP_SCRIPT_URL + "?name=" + encodeURIComponent(name))
+        .then(r=>r.json())
+        .then(data=>{
+          rawData = data;
+          drawChart(document.querySelector("#ranges .active").dataset.range);
+        })
+        .catch(()=>{/* silent */});
     });
-
-    // plein écran
     document.getElementById("fullscreen").addEventListener("click", ()=>{
       const el = document.getElementById("chart-container");
       if (document.fullscreenElement) {
@@ -153,6 +155,7 @@
         el.requestFullscreen();
       }
     });
+  });
   </script>
 </body>
 </html>
