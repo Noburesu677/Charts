@@ -1,3 +1,8 @@
+/* style.css */
+/* ── FONT & NEON ───────────────────────────────────────────────── */
+/* DOIT être **en tout début** du fichier pour que ça fonctionne partout */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
 /* ── RESET ───────────────────────────────────────────────────────── */
 * {
   margin: 0;
@@ -28,7 +33,6 @@
 }
 
 /* ── FONT & NEON ───────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 body {
   font-family: 'Orbitron', sans-serif;
   background: #000;
@@ -98,7 +102,7 @@ main {
 #chart-container {
   position: relative;
   width: 80vw;
-  height: 60vh;
+  height: 60vh;          /* dimensionne le conteneur */
   border: 2px solid #0ff;
   border-radius: 8px;
   background: #111;
