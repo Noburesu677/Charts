@@ -1,183 +1,88 @@
 /* style.css */
-/* ── FONT & NEON ───────────────────────────────────────────────── */
-/* DOIT être **en tout début** du fichier pour que ça fonctionne partout */
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 
-/* ── RESET ───────────────────────────────────────────────────────── */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* RESET */
+*{ margin:0; padding:0; box-sizing:border-box; }
+
+/* FOND ÉTOILÉ ANIMÉ */
+#stars, #stars2 {
+  position:fixed; top:0; left:0; width:200%; height:200%;
+  background:transparent url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/1231630/starfield.png') repeat;
+  animation: drift 200s linear infinite;
+  z-index:-2;
+}
+#stars2 { opacity:0.2; animation-duration:300s; }
+@keyframes drift {
+  from{transform:translate(0,0);} to{transform:translate(-50%, -50%);}
 }
 
-/* ── FOND ÉTOILÉ ANIMÉ ───────────────────────────────────────── */
-#stars {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: #000;
-  overflow: hidden;
-  z-index: -1;
-}
-#stars::after {
-  content: "";
-  position: absolute;
-  width: 300%; height: 300%;
-  background: url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/1231630/starfield.png') repeat;
-  animation: moveStars 60s linear infinite;
-  opacity: 0.3;
-}
-@keyframes moveStars {
-  from { transform: translate(0,0); }
-  to   { transform: translate(-1000px,500px); }
-}
-
-/* ── FONT & NEON ───────────────────────────────────────────────── */
+/* TYPO & LAYOUT */
 body {
-  font-family: 'Orbitron', sans-serif;
-  background: #000;
-  color: #eee;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+  font-family:'Orbitron',sans-serif;
+  background:#000;
+  color:#eee;
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
 }
+header, footer {
+  text-align:center;
+  padding:1rem;
+  background:rgba(0,0,0,0.6);
+}
+footer{ font-size:0.8rem; }
 
-/* ── HEADER ───────────────────────────────────────────────────── */
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-}
-#logo {
-  font-size: 2.5rem;
-  color: #0ff;
-  text-shadow:
-    0 0 4px #0ff,
-    0 0 8px #0ff,
-    0 0 12px #0ff,
-    0 0 16px #0ff;
-  transition: text-shadow .3s;
-}
-#logo:hover {
-  text-shadow:
-    0 0 8px #0ff,
-    0 0 16px #0ff,
-    0 0 24px #0ff,
-    0 0 32px #0ff;
-}
-nav#ranges a {
-  margin-left: 1rem;
-  text-decoration: none;
-  color: #888;
-  font-weight: 700;
-  transition: color .2s;
-  position: relative;
-}
-nav#ranges a::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  box-shadow: 0 0 8px rgba(0,255,255,0.6);
-  opacity: 0;
-  transition: opacity .3s;
-}
-nav#ranges a:hover::after,
-nav#ranges a.active::after {
-  opacity: 1;
-}
-nav#ranges a.active,
-nav#ranges a:hover {
-  color: #0ff;
-}
-
-/* ── MAIN & CHART ─────────────────────────────────────────────── */
+/* CONTENEUR CENTRAL */
 main {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 2rem;
+  flex:1;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:2rem;
 }
-#chart-container {
-  position: relative;
-  width: 80vw;
-  height: 60vh;          /* dimensionne le conteneur */
-  border: 2px solid #0ff;
-  border-radius: 8px;
-  background: #111;
-  box-shadow: 0 0 20px rgba(0,255,255,0.4);
-  overflow: hidden;
+#chart-box {
+  position:relative;
+  width:60vmin; height:60vmin;
+  max-width:500px; max-height:500px;
+  background:#111;
+  border:4px solid #00FFFF;
+  border-radius:12px;
+  box-shadow:
+    0 0 20px rgba(0,255,255,0.6),
+    inset 0 0 10px rgba(0,255,255,0.8);
+  overflow:hidden;
+  animation: glow 2s ease-in-out infinite alternate;
 }
-#chart-container canvas {
-  width: 100% !important;
-  height: 100% !important;
-  display: block;
+@keyframes glow {
+  from{box-shadow:0 0 20px rgba(0,255,255,0.4), inset 0 0 10px rgba(0,255,255,0.6);}
+  to  {box-shadow:0 0 30px rgba(0,255,255,0.8), inset 0 0 15px rgba(0,255,255,1);}
 }
-
-/* ── ACTIONS ───────────────────────────────────────────────────── */
-#actions {
-  position: absolute;
-  top: 0.8rem;
-  right: 0.8rem;
-  display: flex;
-  gap: 0.5rem;
-}
-#actions button {
-  background: rgba(0,255,255,0.2);
-  border: none;
-  padding: 0.5rem;
-  font-size: 1.2rem;
-  color: #0ff;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background .2s, transform .2s;
-  position: relative;
-}
-#actions button::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  box-shadow: 0 0 8px rgba(0,255,255,0.6);
-  opacity: 0;
-  transition: opacity .3s;
-}
-#actions button:hover::after {
-  opacity: 1;
-}
-#actions button:hover {
-  background: rgba(0,255,255,0.4);
-  transform: scale(1.1);
+#chart-box canvas {
+  width:100% !important;
+  height:100% !important;
+  display:block;
 }
 
-/* ── FOOTER ─────────────────────────────────────────────────────── */
-footer {
-  text-align: center;
-  padding: 1rem;
-  font-size: 0.9rem;
-  background: #111;
-  border-top: 1px solid #222;
+/* CONTRÔLES DE PLAGE */
+#controls {
+  position:absolute;
+  bottom:8px; left:50%;
+  transform:translateX(-50%);
+  display:flex; gap:0.4rem;
 }
-
-/* ── ERREURS ─────────────────────────────────────────────────────── */
-.error {
-  color: #f55;
-  font-size: 1.2rem;
-  text-align: center;
-  padding: 2rem;
+#controls button {
+  background:rgba(0,255,255,0.2);
+  border:2px solid transparent;
+  padding:0.4rem 0.6rem;
+  font-size:0.8rem;
+  color:#00FFFF;
+  border-radius:4px;
+  cursor:pointer;
+  transition: background 0.2s, border 0.2s, transform 0.2s;
 }
-
-/* ── RESPONSIVE ─────────────────────────────────────────────────── */
-@media (max-width: 768px) {
-  #chart-container {
-    width: 90vw;
-    height: 50vh;
-  }
-  #logo {
-    font-size: 2rem;
-  }
-  nav#ranges a {
-    margin-left: 0.5rem;
-    font-size: 0.9rem;
-  }
+#controls button.active,
+#controls button:hover {
+  background:rgba(0,255,255,0.4);
+  border-color:#00FFFF;
+  transform:scale(1.1);
 }
