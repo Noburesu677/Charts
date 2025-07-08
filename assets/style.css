@@ -2,87 +2,112 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 
 /* RESET */
-*{ margin:0; padding:0; box-sizing:border-box; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-/* FOND ÉTOILÉ ANIMÉ */
+/* STARFIELD BACKGROUND */
 #stars, #stars2 {
-  position:fixed; top:0; left:0; width:200%; height:200%;
-  background:transparent url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/1231630/starfield.png') repeat;
+  position: fixed;
+  top: 0; left: 0;
+  width: 200%;
+  height: 200%;
+  background: transparent url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/1231630/starfield.png') repeat;
   animation: drift 200s linear infinite;
-  z-index:-2;
+  z-index: -2;
 }
-#stars2 { opacity:0.2; animation-duration:300s; }
+#stars2 {
+  opacity: 0.2;
+  animation-duration: 300s;
+}
 @keyframes drift {
-  from{transform:translate(0,0);} to{transform:translate(-50%, -50%);}
+  from { transform: translate(0,0); }
+  to   { transform: translate(-50%, -50%); }
 }
 
-/* TYPO & LAYOUT */
+/* LAYOUT & TYPOGRAPHY */
 body {
-  font-family:'Orbitron',sans-serif;
-  background:#000;
-  color:#eee;
-  display:flex;
-  flex-direction:column;
-  min-height:100vh;
+  font-family: 'Orbitron', sans-serif;
+  background: #000;
+  color: #eee;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 header, footer {
-  text-align:center;
-  padding:1rem;
-  background:rgba(0,0,0,0.6);
+  text-align: center;
+  padding: 1rem;
+  background: rgba(0,0,0,0.6);
 }
-footer{ font-size:0.8rem; }
+footer {
+  font-size: 0.8rem;
+}
 
-/* CONTENEUR CENTRAL */
+/* CENTERED CHART CONTAINER */
 main {
-  flex:1;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  padding:2rem;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
 }
 #chart-box {
-  position:relative;
-  width:60vmin; height:60vmin;
-  max-width:500px; max-height:500px;
-  background:#111;
-  border:4px solid #00FFFF;
-  border-radius:12px;
+  position: relative;
+  width: 60vmin;
+  height: 60vmin;
+  max-width: 500px;
+  max-height: 500px;
+  background: #111;
+  border: 4px solid #00FFFF;
+  border-radius: 12px;
   box-shadow:
     0 0 20px rgba(0,255,255,0.6),
     inset 0 0 10px rgba(0,255,255,0.8);
-  overflow:hidden;
+  overflow: hidden;
   animation: glow 2s ease-in-out infinite alternate;
 }
 @keyframes glow {
-  from{box-shadow:0 0 20px rgba(0,255,255,0.4), inset 0 0 10px rgba(0,255,255,0.6);}
-  to  {box-shadow:0 0 30px rgba(0,255,255,0.8), inset 0 0 15px rgba(0,255,255,1);}
+  from {
+    box-shadow:
+      0 0 20px rgba(0,255,255,0.4),
+      inset 0 0 10px rgba(0,255,255,0.6);
+  }
+  to {
+    box-shadow:
+      0 0 30px rgba(0,255,255,0.8),
+      inset 0 0 15px rgba(0,255,255,1);
+  }
 }
 #chart-box canvas {
-  width:100% !important;
-  height:100% !important;
-  display:block;
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
 }
 
-/* CONTRÔLES DE PLAGE */
+/* RANGE CONTROLS */
 #controls {
-  position:absolute;
-  bottom:8px; left:50%;
-  transform:translateX(-50%);
-  display:flex; gap:0.4rem;
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.4rem;
 }
 #controls button {
-  background:rgba(0,255,255,0.2);
-  border:2px solid transparent;
-  padding:0.4rem 0.6rem;
-  font-size:0.8rem;
-  color:#00FFFF;
-  border-radius:4px;
-  cursor:pointer;
+  background: rgba(0,255,255,0.2);
+  border: 2px solid transparent;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  color: #00FFFF;
+  border-radius: 4px;
+  cursor: pointer;
   transition: background 0.2s, border 0.2s, transform 0.2s;
 }
 #controls button.active,
 #controls button:hover {
-  background:rgba(0,255,255,0.4);
-  border-color:#00FFFF;
-  transform:scale(1.1);
+  background: rgba(0,255,255,0.4);
+  border-color: #00FFFF;
+  transform: scale(1.1);
 }
