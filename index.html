@@ -1,10 +1,12 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <title>AnomicValue Charts</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="style.css">
+  <!-- Si ton style.css est dans assets/, adapte le chemin ci-dessous -->
+  <link rel="stylesheet" href="assets/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -53,10 +55,10 @@
       let subset = rawData;
       if (range !== "all") {
         const cutoff = Date.now()/1000 - range*24*3600;
-        subset = rawData.filter(p=>p.t >= cutoff);
+        subset = rawData.filter(p => p.t >= cutoff);
       }
-      const labels = subset.map(p=>new Date(p.t*1000).toLocaleDateString());
-      const values = subset.map(p=>p.v);
+      const labels = subset.map(p => new Date(p.t*1000).toLocaleDateString());
+      const values = subset.map(p => p.v);
 
       const cfg = {
         type: "line",
@@ -70,7 +72,7 @@
         }]},
         options: {
           responsive: true,
-          maintainAspectRatio: false,
+          maintainAspectRatio: false,  // <-- important
           plugins: {
             legend: { labels:{ color:"#0FF", font:{size:16} } }
           },
@@ -94,7 +96,7 @@
       );
     }
 
-    fetch(APP_SCRIPT_URL + "?name=" + encodeURIComponent(name))
+    fetch(`${APP_SCRIPT_URL}?name=${encodeURIComponent(name)}`)
       .then(r=>r.ok ? r.json() : Promise.reject(r.statusText))
       .then(data=>{
         if (!Array.isArray(data) || data.length===0)
@@ -114,7 +116,7 @@
       })
     );
     document.getElementById("refresh").addEventListener("click", ()=>{
-      fetch(APP_SCRIPT_URL + "?name=" + encodeURIComponent(name))
+      fetch(`${APP_SCRIPT_URL}?name=${encodeURIComponent(name)}`)
         .then(r=>r.json())
         .then(data=>{ rawData=data; drawChart(document.querySelector("#ranges .active").dataset.range) })
         .catch(()=>{/* silent */});
